@@ -1,0 +1,4 @@
+build/
+priv/lib/
+.gleam/
+node_modules/

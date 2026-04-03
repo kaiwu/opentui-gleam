@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git submodule:*)",
+      "Bash(chmod:*)",
+      "Bash(gleam deps:*)",
+      "Bash(gleam build:*)",
+      "Bash(gleam:*)",
+      "Bash(find /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig -name *.ts -o -name *.tsx)",
+      "Bash(ls /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig/packages/core/src/zig/build*)",
+      "Bash(ls /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig/packages/core/build*)",
+      "Bash(ls /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig/build*)",
+      "Bash(ls /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig/*.zig)",
+      "Bash(zig version:*)",
+      "Bash(zig build:*)",
+      "Bash(find /home/kaiwu/Documents/gitea/opentui-gleam -name *.ts -path */examples/*)",
+      "Bash(bun:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(find /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig -name *Input* -o -name *input*)",
+      "Bash(grep -rn \"export fn.*edit_buffer\\\\|export fn.*EditBuffer\" native/opentui-zig/ --include=*.zig)"
+    ]
+  }
+}
