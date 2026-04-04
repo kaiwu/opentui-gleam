@@ -13,6 +13,7 @@ const osMap = { darwin: "macos", linux: "linux", win32: "windows" }
 const arch = archMap[process.arch] || process.arch
 const os = osMap[process.platform] || process.platform
 const targetDir = `${arch}-${os}`
+const npmPackageSuffix = `${process.platform}-${process.arch}`
 
 function resolveProjectRoot() {
   const candidates = [process.cwd()]
@@ -28,7 +29,11 @@ function resolveProjectRoot() {
   }
 
   for (const candidate of candidates) {
-    if (existsSync(join(candidate, "gleam.toml")) && existsSync(join(candidate, "native", "opentui-zig"))) {
+    const hasGleamToml = existsSync(join(candidate, "gleam.toml"))
+    const hasSubmodule = existsSync(join(candidate, "native", "opentui-zig"))
+    const hasNativePackages = existsSync(join(candidate, "node_modules", "@opentui"))
+
+    if (hasGleamToml && (hasSubmodule || hasNativePackages)) {
       return candidate
     }
   }
@@ -38,10 +43,15 @@ function resolveProjectRoot() {
 
 function resolveNativeLibraryPath() {
   const root = resolveProjectRoot()
-  const candidates = [
+  const submoduleCandidates = [
     join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
     join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
   ]
+  const npmCandidates = [
+    join(root, "node_modules", "@opentui", `core-${npmPackageSuffix}`, `libopentui.${suffix}`),
+    join(root, "node_modules", "@opentui", `core-${npmPackageSuffix}`, `opentui.${suffix}`),
+  ]
+  const candidates = [...submoduleCandidates, ...npmCandidates]
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
@@ -50,7 +60,7 @@ function resolveNativeLibraryPath() {
   }
 
   throw new Error(
-    `Native library not found in submodule build outputs. Expected one of:\n${candidates.join("\n")}\nRun: ./scripts/build-native.sh`,
+    `Native library not found. Expected one of:\n${candidates.join("\n")}\nBuild from submodule with ./scripts/build-native.sh or install the matching native npm package.`,
   )
 }
 

@@ -26,6 +26,8 @@
 
 **Current direction:** this repo is evolving toward a Gleam ecosystem, not a single hardcoded demo. The default `gleam run` entrypoint is a catalog/help surface, while each demo remains directly runnable as its own module.
 
+**Native library resolution:** the shim first tries the locally built submodule output under `native/opentui-zig/packages/core/src/zig/lib/<target>/`. If that does not exist, it falls back to the matching prebuilt native npm package under `node_modules/@opentui/core-<platform>-<arch>/`. The package suffix is chosen from `process.platform` and `process.arch`, for example `linux-x64` on this machine.
+
 ---
 
 ## Directory Structure
@@ -34,6 +36,7 @@
 opentui-gleam/
 ├── gleam.toml
 ├── manifest.toml
+├── package.json                      # Optional native npm package fallback declarations
 ├── README.md
 │
 ├── AGENTS.md                         # Project direction and architecture notes
@@ -83,6 +86,12 @@ gleam run
 
 # Run a specific demo directly
 gleam run -m opentui/examples/editor
+
+# Optional: install a prebuilt native library instead of building from the submodule
+npm install
+
+# This will install the matching optional native package for the current platform,
+# for example @opentui/core-linux-x64 on Linux x64.
 ```
 
 New demos should be added under `src/opentui/examples/` and registered in `src/opentui/catalog.gleam`.
