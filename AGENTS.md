@@ -4,107 +4,102 @@
 
 This repository is building a **Gleam-first OpenTUI ecosystem**.
 
-The long-term goal is not just thin bindings. The target is to provide OpenTUI capabilities as **Gleam packages and modules** in the same spirit that the upstream TypeScript monorepo provides multiple packages, examples, and growth paths for its own ecosystem.
+The long-term goal is not just thin bindings. The target is to provide OpenTUI capabilities as **independent Gleam packages** in the same spirit that the upstream TypeScript monorepo provides multiple packages and ecosystem growth paths.
 
-That means work here should generally move toward:
-
-- richer Gleam bindings over the OpenTUI native surface
-- reusable Gleam runtime helpers where necessary
-- Gleam-native demos and example applications
-- functional, composable APIs rather than monolithic imperative demo code
-- clear separation between low-level bindings and higher-level Gleam ergonomics
-
-## Current Structure
+## Current Monorepo Structure
 
 ### Canonical layout
 
-- `src/opentui/ffi.gleam`
-  - Low-level `@external` boundary to `src/opentui/ffi_shim.js`
-  - Keep this focused on raw native access and opaque handle types
+- `packages/opentui_core/`
+  - Low-level FFI package
+  - Owns `src/opentui/ffi.gleam`, `src/opentui/runtime.gleam`, and `src/opentui/ffi_shim.js`
+  - Owns native loading logic and fallback npm package declarations
 
-- `src/opentui/runtime.gleam`
-  - Runtime helpers above raw FFI
-  - Contains JS-loop helpers and logging helpers that are not part of the core binding surface
+- `packages/opentui_runtime/`
+  - Ergonomic Gleam runtime wrappers above the raw FFI layer
+  - Current modules include `buffer`, `renderer`, `edit_buffer`, `text`, and `types`
 
-- `src/opentui/*.gleam`
-  - Reusable Gleam binding modules and ergonomic APIs
-  - Current examples: `buffer`, `renderer`, `edit_buffer`, `text`, `types`, `catalog`
-
-- `src/opentui/examples/*.gleam`
-  - Runnable demo modules
-  - Each demo should be directly runnable with `gleam run -m <module>`
-
-- `src/opentui/examples/common.gleam`
-  - Shared demo bootstrap/chrome helpers
-  - Prefer growing reusable demo support here over copy-pasting layout scaffolding
-
-- `src/opentui.gleam`
-  - Default package entrypoint
-  - Should act as a catalog/launcher/help surface, not a hardwired single demo forever
-
-- `src/opentui/ffi_shim.js`
-  - Single Bun FFI shim with one `dlopen()` call and all exported JS bridge functions
-  - Avoid pulling TypeScript runtime logic from the upstream submodule into this layer
+- `packages/opentui_examples/`
+  - Runnable demos and catalog/help entrypoint
+  - Contains `src/opentui/catalog.gleam` and `src/opentui/examples/*`
 
 - `native/opentui-zig/`
-  - Upstream OpenTUI submodule
-  - Treat this as the native source of truth and inspiration for ecosystem structure, including the built shared library output under `packages/core/src/zig/lib/<target>/`
+  - Upstream native source of truth
+  - Also the local build source for shared libraries during monorepo development
+
+## Package Dependency Direction
+
+Keep dependencies strictly downward:
+
+- `opentui_core` → no internal package deps
+- `opentui_runtime` → may depend on `opentui_core`
+- `opentui_examples` → may depend on `opentui_core` and `opentui_runtime`
+
+Do not introduce reverse imports.
+
+## Module Namespace Guidance
+
+Preserve the `opentui/...` module namespace across packages where possible.
+
+The package boundary should change more often than the public module path.
 
 ## Architectural Direction
 
-### 1. Prefer namespaced Gleam modules
+### 1. Keep `opentui_core` mechanical
 
-New work should prefer `opentui/...` modules over adding more flat top-level modules in `src/`.
+`opentui_core` should remain focused on:
 
-### 2. Keep bindings and demos separate
+- opaque handles
+- raw `@external` declarations
+- JS shim integration
+- native library resolution
 
-- Binding modules belong under `src/opentui/`
-- Demo/app modules belong under `src/opentui/examples/` or future app-oriented namespaces
+Avoid demo logic or high-level UI logic here.
 
-Do not mix demo-specific orchestration into the low-level binding layer unless it truly belongs there.
+### 2. Grow `opentui_runtime` into the main user-facing API
 
-### 3. Favor FP composability
+This package should provide safe, ergonomic wrappers over core primitives.
 
-When implementing demos and higher-level APIs, prefer:
+Future additions belong here before they belong in examples:
 
-- pure data transformations
-- small render helpers
-- explicit state records
-- composition through functions and modules
+- `text_buffer`
+- `editor_view`
+- `syntax_style`
+- selection and clipboard wrappers
+- event abstractions
 
-Avoid growing giant single-file demos that combine setup, state mutation, layout, rendering, and platform control in one place if the code can reasonably be decomposed.
+### 3. Keep examples separate
 
-### 4. Grow toward package-like boundaries
+`opentui_examples` should remain a consumer of the lower packages, not an owner of shared runtime logic unless that logic is clearly demo-only.
 
-Even though this repo is currently one Gleam package, structure code as if it may eventually split into clearer package domains, such as:
+When reusable helper logic emerges from demos, move it downward into the right package.
 
-- core bindings
-- runtime helpers
-- widgets/components
-- demo/example apps
+## Self-Contained Package Rule
 
-Design module boundaries so this split is possible later without large rewrites.
+Each package should be independently publishable in principle. That means each package directory should contain its own:
 
-## Demo Conventions
+- `gleam.toml`
+- `src/`
+- `test/`
+- README and package metadata as needed
 
-- Every demo should have a stable runnable module path, e.g. `opentui/examples/editor`
-- The default `gleam run` path should not be the only way to access demos
-- Add new demos to the catalog/registry so discovery stays centralized
-- Prefer reusable helper functions over demo-local duplication
+Do not rely on a single root `gleam.toml` for package identity.
 
 ## Testing Expectations
 
-When changing structure or runtime behavior:
+When changing package structure or runtime behavior:
 
-- add or update `gleam test` coverage for catalogs/registries/module contracts
-- run `gleam build`
-- run `gleam test`
-- run relevant demo entrypoints when practical (`gleam run -m ...`)
+- run `gleam build` in each affected package
+- run `gleam test` in each affected package
+- run relevant demos from `packages/opentui_examples`
 
-If JS shim behavior changes in a meaningful way and is practical to test directly, add runtime-side coverage as well.
+Use the repo-level helper scripts when useful:
+
+- `./scripts/build-all.sh`
+- `./scripts/test-all.sh`
 
 ## Documentation Expectations
 
-Keep `README.md` and this file aligned with reality.
+Keep `README.md`, this file, and `ROADMAP.md` aligned with the actual monorepo structure.
 
-If you change module layout, demo entrypoints, or the intended ecosystem direction, update the docs in the same change.
+If package boundaries change, update the docs in the same change.

@@ -2,8 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-ZIG_DIR="$ROOT_DIR/native/opentui-zig/packages/core/src/zig"
+PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_DIR="$(cd "$PACKAGE_DIR/../.." && pwd)"
+ZIG_DIR="$REPO_DIR/native/opentui-zig/packages/core/src/zig"
 
 # Detect platform
 ARCH=$(uname -m)

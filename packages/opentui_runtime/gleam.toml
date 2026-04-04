@@ -1,0 +1,22 @@
+name = "opentui_runtime"
+version = "0.1.0"
+gleam = ">= 1.15.0"
+
+target = "javascript"
+
+[javascript]
+runtime = "bun"
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+opentui_core = { path = "../opentui_core" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+
+[repository]
+type = "github"
+user = "kaiwu"
+repo = "opentui-gleam"
+path = "packages/opentui_runtime"
+tag_prefix = "opentui_runtime-"

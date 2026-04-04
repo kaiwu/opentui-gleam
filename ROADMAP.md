@@ -19,19 +19,19 @@ The repository already has a good foundation, but it does **not** yet provide fu
 
 ### What is already in place
 
-- raw FFI access in `src/opentui/ffi.gleam`
-- Bun FFI shim in `src/opentui/ffi_shim.js`
+- raw FFI access in `packages/opentui_core/src/opentui/ffi.gleam`
+- Bun FFI shim in `packages/opentui_core/src/opentui/ffi_shim.js`
 - direct native loading from `native/opentui-zig/packages/core/src/zig/lib/<target>/`
 - basic high-level wrappers:
-  - `src/opentui/renderer.gleam`
-  - `src/opentui/buffer.gleam`
-  - `src/opentui/edit_buffer.gleam`
-  - `src/opentui/text.gleam`
-  - `src/opentui/types.gleam`
-  - `src/opentui/runtime.gleam`
+  - `packages/opentui_runtime/src/opentui/renderer.gleam`
+  - `packages/opentui_runtime/src/opentui/buffer.gleam`
+  - `packages/opentui_runtime/src/opentui/edit_buffer.gleam`
+  - `packages/opentui_runtime/src/opentui/text.gleam`
+  - `packages/opentui_runtime/src/opentui/types.gleam`
+  - `packages/opentui_core/src/opentui/runtime.gleam`
 - demo registry and examples:
-  - `src/opentui/catalog.gleam`
-  - `src/opentui/examples/*`
+  - `packages/opentui_examples/src/opentui/catalog.gleam`
+  - `packages/opentui_examples/src/opentui/examples/*`
 
 ### What is currently demonstrated
 

@@ -30,7 +30,7 @@ function resolveProjectRoot() {
 
   for (const candidate of candidates) {
     const hasGleamToml = existsSync(join(candidate, "gleam.toml"))
-    const hasSubmodule = existsSync(join(candidate, "native", "opentui-zig"))
+    const hasSubmodule = existsSync(join(candidate, "native", "opentui-zig")) || existsSync(join(candidate, "..", "..", "native", "opentui-zig"))
     const hasNativePackages = existsSync(join(candidate, "node_modules", "@opentui"))
 
     if (hasGleamToml && (hasSubmodule || hasNativePackages)) {
@@ -46,6 +46,8 @@ function resolveNativeLibraryPath() {
   const submoduleCandidates = [
     join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
     join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
+    join(root, "..", "..", "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
+    join(root, "..", "..", "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
   ]
   const npmCandidates = [
     join(root, "node_modules", "@opentui", `core-${npmPackageSuffix}`, `libopentui.${suffix}`),
@@ -349,7 +351,13 @@ export const createRenderer = raw.createRenderer
 export const destroyRenderer = raw.destroyRenderer
 export const render = raw.render
 export const resizeRenderer = raw.resizeRenderer
-export const setupTerminal = raw.setupTerminal
+export function setupTerminal(renderer, useAlternateScreen) {
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true)
+  }
+  process.stdin.resume()
+  raw.setupTerminal(renderer, useAlternateScreen)
+}
 export const suspendRenderer = raw.suspendRenderer
 export const resumeRenderer = raw.resumeRenderer
 export const destroyOptimizedBuffer = raw.destroyOptimizedBuffer
@@ -684,12 +692,32 @@ function cleanupAndExit(rendererPtr) {
   process.exit(0)
 }
 
+function scheduleStartupRerenders(rendererPtr, drawFn) {
+  const timers = [
+    setTimeout(() => {
+      drawFn()
+      raw.render(rendererPtr, true)
+    }, 40),
+    setTimeout(() => {
+      drawFn()
+      raw.render(rendererPtr, true)
+    }, 140),
+  ]
+
+  return () => {
+    for (const timer of timers) {
+      clearTimeout(timer)
+    }
+  }
+}
+
 // Run the demo loop: draws the frame, then listens for keys.
 // On each keypress, calls drawFn() and re-renders.
 // Quits when 'q' is pressed.
 export function runDemoLoop(renderer, drawFn) {
   const r = Number(renderer) // Gleam opaque -> Int -> JS number
   const parser = new DemoInputParser()
+  const cancelStartupRerenders = scheduleStartupRerenders(r, drawFn)
 
   // Initial render
   drawFn()
@@ -704,6 +732,7 @@ export function runDemoLoop(renderer, drawFn) {
   process.stdin.on("data", (chunk) => {
     parser.push(chunk, (token) => {
       if (token === "\x03" || token === "q") {
+        cancelStartupRerenders()
         cleanupAndExit(r)
       }
     })
@@ -716,6 +745,7 @@ export function runDemoLoop(renderer, drawFn) {
 export function runEditorLoop(renderer, onKey, drawFn) {
   const r = Number(renderer)
   const parser = new DemoInputParser()
+  const cancelStartupRerenders = scheduleStartupRerenders(r, drawFn)
 
   // Initial render
   drawFn()
@@ -730,6 +760,7 @@ export function runEditorLoop(renderer, onKey, drawFn) {
   process.stdin.on("data", (chunk) => {
     parser.push(chunk, (token) => {
       if (token === "\x03" || token === "q") {
+        cancelStartupRerenders()
         cleanupAndExit(r)
       }
       onKey(token)
