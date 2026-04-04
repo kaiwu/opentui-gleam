@@ -1,41 +1,50 @@
-import gleam/list
-import opentui/buffer
 import opentui/examples/common
-import opentui/ffi
 import opentui/text
+import opentui/ui
 
 const sample = "Gleam makes layout helpers easy to compose as pure functions. This demo shows the same paragraph rendered with no wrap, word wrap, and character wrap."
 
 pub fn main() -> Nil {
-  common.run_static_demo("Text Wrap Demo", "Gleam Text Wrap Demo", draw_body)
+  common.run_static_ui_demo("Text Wrap Demo", "Gleam Text Wrap Demo", view())
 }
 
-fn draw_body(buf: ffi.Buffer) -> Nil {
-  common.draw_panel(buf, 2, 3, 24, 18, "No wrap")
-  common.draw_panel(buf, 28, 3, 24, 18, "Word wrap")
-  common.draw_panel(buf, 54, 3, 24, 18, "Character wrap")
-
-  draw_lines(buf, 4, 5, text.wrap(sample, 18, text.NoWrap))
-  draw_lines(buf, 30, 5, text.wrap(sample, 18, text.WordWrap))
-  draw_lines(buf, 56, 5, text.wrap(sample, 18, text.CharacterWrap))
+fn view() -> List(ui.Element) {
+  [
+    panel(2, "No wrap", text.wrap(sample, 18, text.NoWrap)),
+    panel(28, "Word wrap", text.wrap(sample, 18, text.WordWrap)),
+    panel(54, "Character wrap", text.wrap(sample, 18, text.CharacterWrap)),
+  ]
 }
 
-fn draw_lines(buf: ffi.Buffer, x: Int, y: Int, lines: List(String)) -> Nil {
-  lines
-  |> list.index_map(fn(line, i) {
-    case i < 14 {
-      True ->
-        buffer.draw_text(
-          buf,
+fn panel(x: Int, title: String, lines: List(String)) -> ui.Element {
+  ui.Box(
+    ui.BoxProps(
+      x,
+      3,
+      24,
+      18,
+      1,
+      color(common.panel_bg),
+      ui.HasBorder(title, color(common.border_fg)),
+    ),
+    [ui.Column(ui.ColumnProps(0), line_elements(lines))],
+  )
+}
+
+fn line_elements(lines: List(String)) -> List(ui.Element) {
+  case lines {
+    [] -> []
+    [line, ..rest] -> {
+      let item =
+        ui.Text(
+          ui.TextProps(color(common.fg_color), color(common.panel_bg), 0),
           text.truncate_end(line, 18),
-          x,
-          y + i,
-          common.fg_color,
-          common.panel_bg,
-          0,
         )
-      False -> Nil
+      [item, ..line_elements(rest)]
     }
-  })
-  |> fn(_) { Nil }()
+  }
+}
+
+fn color(c: #(Float, Float, Float, Float)) -> ui.Color {
+  ui.Color(c.0, c.1, c.2, c.3)
 }

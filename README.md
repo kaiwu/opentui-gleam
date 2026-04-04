@@ -8,6 +8,7 @@ This repository is now structured as a **Gleam monorepo** with multiple self-con
 packages/
   opentui_core/
   opentui_runtime/
+  opentui_ui/
   opentui_examples/
 ```
 
@@ -32,6 +33,15 @@ Owns ergonomic Gleam wrappers over the core layer:
 - `opentui/text.gleam`
 - `opentui/types.gleam`
 
+### `packages/opentui_ui`
+
+Owns the declarative UI layer:
+
+- `opentui/ui.gleam`
+- pure element ADTs
+- single-pass rendering from UI data into buffer calls
+- pure helpers like tree folding and serialization
+
 ### `packages/opentui_examples`
 
 Owns runnable demos and the catalog/help entrypoint:
@@ -47,7 +57,8 @@ Each package has its own `gleam.toml` and uses local path dependencies where nee
 Current dependency flow:
 
 - `opentui_runtime` → `opentui_core`
-- `opentui_examples` → `opentui_core`, `opentui_runtime`
+- `opentui_ui` → `opentui_core`, `opentui_runtime`
+- `opentui_examples` → `opentui_core`, `opentui_runtime`, `opentui_ui`
 
 ## Native library resolution
 

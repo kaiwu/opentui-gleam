@@ -2,6 +2,7 @@ import opentui/buffer
 import opentui/ffi
 import opentui/renderer
 import opentui/runtime
+import opentui/ui
 
 pub const term_w = 80
 
@@ -48,6 +49,16 @@ pub fn run_static_demo(
   runtime.run_demo_loop(r_int, fn() { render_static_frame(r, title, draw_body) })
 
   Nil
+}
+
+pub fn run_static_ui_demo(
+  title: String,
+  term_title: String,
+  elements: List(ui.Element),
+) -> Nil {
+  run_static_demo(title, term_title, fn(buf) {
+    render_static_frame_ui(buf, elements)
+  })
 }
 
 pub fn draw_panel(
@@ -100,6 +111,10 @@ fn render_static_frame(
     status_bg,
     0,
   )
+}
+
+fn render_static_frame_ui(buf: ffi.Buffer, elements: List(ui.Element)) -> Nil {
+  ui.render_all(buf, elements)
 }
 
 fn each_index(n: Int, f: fn(Int) -> Nil) -> Nil {

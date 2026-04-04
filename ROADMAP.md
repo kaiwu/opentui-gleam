@@ -130,6 +130,12 @@ Expected future contents:
 
 This is the closest analog to the higher-level experience provided upstream through React/Solid.
 
+Status:
+
+- initial package created
+- first-pass `Element` tree and renderer added
+- first migrated examples: `terminal_title`, `text_wrap`, `text_truncation`
+
 ### 4. `opentui_testing`
 
 Purpose:

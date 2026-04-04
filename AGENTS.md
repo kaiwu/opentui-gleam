@@ -19,6 +19,11 @@ The long-term goal is not just thin bindings. The target is to provide OpenTUI c
   - Ergonomic Gleam runtime wrappers above the raw FFI layer
   - Current modules include `buffer`, `renderer`, `edit_buffer`, `text`, and `types`
 
+- `packages/opentui_ui/`
+  - Declarative UI package
+  - Owns pure UI trees and single-pass rendering helpers
+  - Current module includes `ui`
+
 - `packages/opentui_examples/`
   - Runnable demos and catalog/help entrypoint
   - Contains `src/opentui/catalog.gleam` and `src/opentui/examples/*`
@@ -33,7 +38,8 @@ Keep dependencies strictly downward:
 
 - `opentui_core` → no internal package deps
 - `opentui_runtime` → may depend on `opentui_core`
-- `opentui_examples` → may depend on `opentui_core` and `opentui_runtime`
+- `opentui_ui` → may depend on `opentui_core` and `opentui_runtime`
+- `opentui_examples` → may depend on `opentui_core`, `opentui_runtime`, and `opentui_ui`
 
 Do not introduce reverse imports.
 
@@ -68,7 +74,18 @@ Future additions belong here before they belong in examples:
 - selection and clipboard wrappers
 - event abstractions
 
-### 3. Keep examples separate
+### 3. Grow `opentui_ui` around pure composability
+
+This package should own:
+
+- declarative element trees
+- style/layout ADTs
+- pure UI transforms
+- single-pass rendering from data into runtime buffer calls
+
+Prefer moving new composable view logic here instead of growing imperative example helpers.
+
+### 4. Keep examples separate
 
 `opentui_examples` should remain a consumer of the lower packages, not an owner of shared runtime logic unless that logic is clearly demo-only.
 

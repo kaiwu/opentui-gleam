@@ -5,4 +5,5 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 (cd "$ROOT_DIR/packages/opentui_core" && gleam build)
 (cd "$ROOT_DIR/packages/opentui_runtime" && gleam build)
+(cd "$ROOT_DIR/packages/opentui_ui" && gleam build)
 (cd "$ROOT_DIR/packages/opentui_examples" && gleam build)

@@ -1,4 +1,4 @@
-name = "opentui_examples"
+name = "opentui_ui"
 version = "0.1.0"
 gleam = ">= 1.15.0"
 
@@ -11,7 +11,6 @@ runtime = "bun"
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 opentui_core = { path = "../opentui_core" }
 opentui_runtime = { path = "../opentui_runtime" }
-opentui_ui = { path = "../opentui_ui" }
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
@@ -20,5 +19,5 @@ gleeunit = ">= 1.0.0 and < 2.0.0"
 type = "github"
 user = "kaiwu"
 repo = "opentui-gleam"
-path = "packages/opentui_examples"
-tag_prefix = "opentui_examples-"
+path = "packages/opentui_ui"
+tag_prefix = "opentui_ui-"

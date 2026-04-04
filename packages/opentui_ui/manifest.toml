@@ -7,7 +7,6 @@ packages = [
   { name = "gleeunit", version = "1.9.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "DA9553CE58B67924B3C631F96FE3370C49EB6D6DC6B384EC4862CC4AAA718F3C" },
   { name = "opentui_core", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_javascript", "gleam_stdlib"], source = "local", path = "../opentui_core" },
   { name = "opentui_runtime", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "opentui_core"], source = "local", path = "../opentui_runtime" },
-  { name = "opentui_ui", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "opentui_core", "opentui_runtime"], source = "local", path = "../opentui_ui" },
 ]
 
 [requirements]
@@ -15,4 +14,3 @@ gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 opentui_core = { path = "../opentui_core" }
 opentui_runtime = { path = "../opentui_runtime" }
-opentui_ui = { path = "../opentui_ui" }
