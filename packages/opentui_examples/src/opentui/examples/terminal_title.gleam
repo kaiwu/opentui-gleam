@@ -12,17 +12,17 @@ pub fn main() -> Nil {
 fn view() -> List(ui.Element) {
   [
     ui.Box(
-      ui.BoxProps(
-        2,
-        3,
-        76,
-        16,
-        1,
-        color(common.panel_bg),
-        ui.HasBorder("Terminal Title", color(common.border_fg)),
-      ),
       [
-        ui.Column(ui.ColumnProps(1), [
+        ui.X(2),
+        ui.Y(3),
+        ui.Width(76),
+        ui.Height(16),
+        ui.Padding(1),
+        ui.Background(color(common.panel_bg)),
+        ui.Border("Terminal Title", color(common.border_fg)),
+      ],
+      [
+        ui.Column([ui.Gap(1)], [
           line("The terminal title for this demo was set from Gleam."),
           ui.Spacer(1),
           line("This mirrors the TypeScript terminal-title example"),
@@ -40,7 +40,10 @@ fn view() -> List(ui.Element) {
 
 fn line(content: String) -> ui.Element {
   ui.Text(
-    ui.TextProps(color(common.fg_color), color(common.panel_bg), 0),
+    [
+      ui.Foreground(color(common.fg_color)),
+      ui.Background(color(common.panel_bg)),
+    ],
     content,
   )
 }

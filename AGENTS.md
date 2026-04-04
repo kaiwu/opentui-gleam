@@ -49,6 +49,22 @@ Preserve the `opentui/...` module namespace across packages where possible.
 
 The package boundary should change more often than the public module path.
 
+## FP Composability Principle
+
+The preferred direction for this repository is **functional composability first**.
+
+That means new UI work should prefer:
+
+- algebraic data types over imperative drawing sequences
+- pure `view(state) -> Element` style APIs where practical
+- style and layout as data
+- pure transformations over UI trees
+- one final render pass that lowers pure UI data into runtime buffer calls
+
+Prefer adding reusable declarative building blocks in `opentui_ui` instead of solving each new demo with bespoke coordinate-heavy rendering code.
+
+Imperative buffer drawing is still valid at the FFI/runtime edge, but it should increasingly become the implementation detail beneath pure UI descriptions rather than the primary authoring model.
+
 ## Architectural Direction
 
 ### 1. Keep `opentui_core` mechanical
@@ -81,7 +97,10 @@ This package should own:
 - declarative element trees
 - style/layout ADTs
 - pure UI transforms
+- pure layout planning APIs
 - single-pass rendering from data into runtime buffer calls
+
+Prefer exposing intermediate pure representations when useful, such as layout plans or serializable trees, so behavior can be tested without relying on terminal execution.
 
 Prefer moving new composable view logic here instead of growing imperative example helpers.
 
@@ -109,6 +128,18 @@ When changing package structure or runtime behavior:
 - run `gleam build` in each affected package
 - run `gleam test` in each affected package
 - run relevant demos from `packages/opentui_examples`
+
+When changing `opentui_ui` or other pure data-driven layers, add tests for the pure semantics, not just smoke tests for final rendering.
+
+Examples of preferred pure tests:
+
+- layout planning from style data
+- stacking / spacing behavior
+- wrapping and truncation behavior
+- tree folds and serialization
+- state-to-view transformations
+
+The more layout and UI become data, the more behavior should be frozen with deterministic pure tests rather than only manual terminal checks.
 
 Use the repo-level helper scripts when useful:
 

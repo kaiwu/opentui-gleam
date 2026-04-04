@@ -9,51 +9,54 @@ pub type Color {
   Color(Float, Float, Float, Float)
 }
 
-pub type Border {
-  NoBorder
-  HasBorder(title: String, fg: Color)
+pub type Truncation {
+  NoTruncation
+  EndTruncate
+  MiddleTruncate
 }
 
-pub type BoxProps {
-  BoxProps(
-    x: Int,
-    y: Int,
-    width: Int,
-    height: Int,
-    padding: Int,
-    background: Color,
-    border: Border,
-  )
-}
-
-pub type ColumnProps {
-  ColumnProps(gap: Int)
-}
-
-pub type TextProps {
-  TextProps(fg: Color, bg: Color, attributes: Int)
-}
-
-pub type ParagraphProps {
-  ParagraphProps(
-    fg: Color,
-    bg: Color,
-    attributes: Int,
-    wrap: text.WrapMode,
-    max_lines: Int,
-  )
+pub type Style {
+  X(Int)
+  Y(Int)
+  Width(Int)
+  Height(Int)
+  Padding(Int)
+  Gap(Int)
+  Background(Color)
+  Foreground(Color)
+  Border(String, Color)
+  Attributes(Int)
+  Wrap(text.WrapMode)
+  MaxLines(Int)
+  Truncate(Truncation)
 }
 
 pub type Element {
-  Box(BoxProps, List(Element))
-  Column(ColumnProps, List(Element))
-  Text(TextProps, String)
-  Paragraph(ParagraphProps, String)
+  Box(List(Style), List(Element))
+  Column(List(Style), List(Element))
+  Text(List(Style), String)
+  Paragraph(List(Style), String)
   Spacer(Int)
 }
 
 type Rect {
   Rect(x: Int, y: Int, width: Int, height: Int)
+}
+
+pub type LayoutNode {
+  LayoutNode(
+    kind: String,
+    x: Int,
+    y: Int,
+    width: Int,
+    height: Int,
+    children: List(LayoutNode),
+  )
+}
+
+type BorderStyle {
+  NoBorder
+  HasBorder(title: String, fg: Color)
 }
 
 pub fn render_all(buf: ffi.Buffer, elements: List(Element)) -> Nil {
@@ -76,52 +79,196 @@ pub fn to_string(elements: List(Element)) -> String {
   |> string.join(with: "\n")
 }
 
+pub fn plan(
+  elements: List(Element),
+  width: Int,
+  height: Int,
+) -> List(LayoutNode) {
+  plan_absolute(elements, Rect(0, 0, width, height))
+}
+
 fn render_absolute(buf: ffi.Buffer, elements: List(Element)) -> Nil {
   case elements {
     [] -> Nil
     [element, ..rest] -> {
-      let _ = render_element(buf, Rect(0, 0, 0, 0), element)
+      let _ = render_element(buf, Rect(0, 0, 1000, 1000), element)
       render_absolute(buf, rest)
     }
   }
 }
 
-fn render_element(buf: ffi.Buffer, rect: Rect, element: Element) -> Int {
+fn plan_absolute(elements: List(Element), rect: Rect) -> List(LayoutNode) {
+  case elements {
+    [] -> []
+    [element, ..rest] -> [
+      plan_element(rect, element),
+      ..plan_absolute(rest, rect)
+    ]
+  }
+}
+
+fn plan_children_in_rect(
+  children: List(Element),
+  rect: Rect,
+) -> List(LayoutNode) {
+  case rect.width <= 0 || rect.height <= 0, children {
+    True, _ -> []
+    False, [] -> []
+    False, [element, ..rest] -> {
+      let node = plan_element(rect, element)
+      let next_rect =
+        Rect(
+          rect.x,
+          rect.y + node.height,
+          rect.width,
+          rect.height - node.height,
+        )
+      [node, ..plan_children_in_rect(rest, next_rect)]
+    }
+  }
+}
+
+fn plan_column_children(
+  children: List(Element),
+  rect: Rect,
+  gap: Int,
+  used: Int,
+) -> List(LayoutNode) {
+  case rect.width <= 0 || rect.height - used <= 0, children {
+    True, _ -> []
+    False, [] -> []
+    False, [element] -> {
+      let child_rect =
+        Rect(rect.x, rect.y + used, rect.width, rect.height - used)
+      [plan_element(child_rect, element)]
+    }
+    False, [element, ..rest] -> {
+      let child_rect =
+        Rect(rect.x, rect.y + used, rect.width, rect.height - used)
+      let node = plan_element(child_rect, element)
+      [node, ..plan_column_children(rest, rect, gap, used + node.height + gap)]
+    }
+  }
+}
+
+fn paragraph_used_height(
+  rect: Rect,
+  styles: List(Style),
+  content: String,
+) -> Int {
+  case rect.width <= 0 || rect.height <= 0 {
+    True -> 0
+    False -> {
+      let wrapped = text.wrap(content, rect.width, wrap_mode(styles))
+      let lines =
+        take_lines(wrapped, limit_lines(rect.height, max_lines(styles)))
+      list.length(lines)
+    }
+  }
+}
+
+fn render_element(buf: ffi.Buffer, parent: Rect, element: Element) -> Int {
   case element {
-    Box(props, children) -> render_box(buf, props, children)
-    Column(props, children) -> render_column(buf, rect, props, children)
-    Text(props, content) -> render_text(buf, rect, props, content)
-    Paragraph(props, content) -> render_paragraph(buf, rect, props, content)
+    Box(styles, children) -> render_box(buf, parent, styles, children)
+    Column(styles, children) -> render_column(buf, parent, styles, children)
+    Text(styles, content) -> render_text(buf, parent, styles, content)
+    Paragraph(styles, content) -> render_paragraph(buf, parent, styles, content)
     Spacer(height) -> height
   }
 }
 
-fn render_box(buf: ffi.Buffer, props: BoxProps, children: List(Element)) -> Int {
-  let BoxProps(x:, y:, width:, height:, padding:, background:, border:) = props
-  buffer.fill_rect(buf, x, y, width, height, color_to_tuple(background))
-
-  case border {
-    NoBorder -> Nil
-    HasBorder(title:, fg:) ->
-      draw_border(buf, x, y, width, height, title, fg, background)
+fn plan_element(parent: Rect, element: Element) -> LayoutNode {
+  case element {
+    Box(styles, children) -> {
+      let rect = resolve_rect(parent, styles)
+      let inner_rect = box_inner_rect(rect, styles)
+      LayoutNode(
+        "Box",
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        plan_children_in_rect(children, inner_rect),
+      )
+    }
+    Column(styles, children) -> {
+      let rect = resolve_rect(parent, styles)
+      LayoutNode(
+        "Column",
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        plan_column_children(children, rect, gap(styles), 0),
+      )
+    }
+    Text(styles, _content) -> {
+      let rect = resolve_rect(parent, styles)
+      let used_height = case rect.width <= 0 || rect.height <= 0 {
+        True -> 0
+        False -> 1
+      }
+      LayoutNode("Text", rect.x, rect.y, rect.width, used_height, [])
+    }
+    Paragraph(styles, content) -> {
+      let rect = resolve_rect(parent, styles)
+      LayoutNode(
+        "Paragraph",
+        rect.x,
+        rect.y,
+        rect.width,
+        paragraph_used_height(rect, styles, content),
+        [],
+      )
+    }
+    Spacer(height) ->
+      LayoutNode("Spacer", parent.x, parent.y, parent.width, height, [])
   }
+}
 
-  let border_offset = case border {
-    NoBorder -> 0
-    HasBorder(_, _) -> 1
+fn render_box(
+  buf: ffi.Buffer,
+  parent: Rect,
+  styles: List(Style),
+  children: List(Element),
+) -> Int {
+  let rect = resolve_rect(parent, styles)
+  case rect.width <= 0 || rect.height <= 0 {
+    True -> 0
+    False -> {
+      let background = background(styles)
+      buffer.fill_rect(
+        buf,
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        color_to_tuple(background),
+      )
+
+      let border = border_style(styles)
+      case border {
+        NoBorder -> Nil
+        HasBorder(title:, fg:) -> draw_border(buf, rect, title, fg, background)
+      }
+
+      let border_offset = case border {
+        NoBorder -> 0
+        HasBorder(_, _) -> 1
+      }
+      let padding = padding(styles)
+      let inner_rect =
+        Rect(
+          rect.x + border_offset + padding,
+          rect.y + border_offset + padding,
+          rect.width - border_offset * 2 - padding * 2,
+          rect.height - border_offset * 2 - padding * 2,
+        )
+
+      let _ = render_children_in_rect(buf, inner_rect, children)
+      rect.height
+    }
   }
-  let inner_width = width - border_offset * 2 - padding * 2
-  let inner_height = height - border_offset * 2 - padding * 2
-  let inner_rect =
-    Rect(
-      x + border_offset + padding,
-      y + border_offset + padding,
-      inner_width,
-      inner_height,
-    )
-
-  let _ = render_children_in_rect(buf, inner_rect, children)
-  height
 }
 
 fn render_children_in_rect(
@@ -146,11 +293,12 @@ fn render_children_in_rect(
 
 fn render_column(
   buf: ffi.Buffer,
-  rect: Rect,
-  props: ColumnProps,
+  parent: Rect,
+  styles: List(Style),
   children: List(Element),
 ) -> Int {
-  let ColumnProps(gap:) = props
+  let rect = resolve_rect(parent, styles)
+  let gap = gap(styles)
   render_column_items(buf, rect, gap, children, 0)
 }
 
@@ -183,22 +331,23 @@ fn render_column_items(
 
 fn render_text(
   buf: ffi.Buffer,
-  rect: Rect,
-  props: TextProps,
+  parent: Rect,
+  styles: List(Style),
   content: String,
 ) -> Int {
+  let rect = resolve_rect(parent, styles)
   case rect.width <= 0 || rect.height <= 0 {
     True -> 0
     False -> {
-      let TextProps(fg:, bg:, attributes:) = props
+      let display = truncate_content(content, rect.width, truncation(styles))
       buffer.draw_text(
         buf,
-        text.truncate_end(content, rect.width),
+        display,
         rect.x,
         rect.y,
-        color_to_tuple(fg),
-        color_to_tuple(bg),
-        attributes,
+        color_to_tuple(foreground(styles)),
+        color_to_tuple(background(styles)),
+        attributes(styles),
       )
       1
     }
@@ -207,33 +356,246 @@ fn render_text(
 
 fn render_paragraph(
   buf: ffi.Buffer,
-  rect: Rect,
-  props: ParagraphProps,
+  parent: Rect,
+  styles: List(Style),
   content: String,
 ) -> Int {
+  let rect = resolve_rect(parent, styles)
   case rect.width <= 0 || rect.height <= 0 {
     True -> 0
     False -> {
-      let ParagraphProps(fg:, bg:, attributes:, wrap:, max_lines:) = props
-      let wrapped = text.wrap(content, rect.width, wrap)
-      let lines = take_lines(wrapped, limit_lines(rect.height, max_lines))
+      let wrapped = text.wrap(content, rect.width, wrap_mode(styles))
+      let lines =
+        take_lines(wrapped, limit_lines(rect.height, max_lines(styles)))
 
       lines
       |> list.index_map(fn(line, i) {
         buffer.draw_text(
           buf,
-          text.truncate_end(line, rect.width),
+          truncate_content(line, rect.width, truncation(styles)),
           rect.x,
           rect.y + i,
-          color_to_tuple(fg),
-          color_to_tuple(bg),
-          attributes,
+          color_to_tuple(foreground(styles)),
+          color_to_tuple(background(styles)),
+          attributes(styles),
         )
       })
       |> fn(_) { Nil }()
 
       list.length(lines)
     }
+  }
+}
+
+fn resolve_rect(parent: Rect, styles: List(Style)) -> Rect {
+  let x_offset =
+    int_style(
+      styles,
+      fn(style) {
+        case style {
+          X(value) -> Ok(value)
+          _ -> Error(Nil)
+        }
+      },
+      0,
+    )
+  let y_offset =
+    int_style(
+      styles,
+      fn(style) {
+        case style {
+          Y(value) -> Ok(value)
+          _ -> Error(Nil)
+        }
+      },
+      0,
+    )
+  let width =
+    int_style(
+      styles,
+      fn(style) {
+        case style {
+          Width(value) -> Ok(value)
+          _ -> Error(Nil)
+        }
+      },
+      parent.width - x_offset,
+    )
+  let height =
+    int_style(
+      styles,
+      fn(style) {
+        case style {
+          Height(value) -> Ok(value)
+          _ -> Error(Nil)
+        }
+      },
+      parent.height - y_offset,
+    )
+
+  Rect(parent.x + x_offset, parent.y + y_offset, width, height)
+}
+
+fn int_style(
+  styles: List(Style),
+  matcher: fn(Style) -> Result(Int, Nil),
+  default: Int,
+) -> Int {
+  case styles {
+    [] -> default
+    [style, ..rest] ->
+      case matcher(style) {
+        Ok(value) -> value
+        Error(_) -> int_style(rest, matcher, default)
+      }
+  }
+}
+
+fn color_style(
+  styles: List(Style),
+  matcher: fn(Style) -> Result(Color, Nil),
+  default: Color,
+) -> Color {
+  case styles {
+    [] -> default
+    [style, ..rest] ->
+      case matcher(style) {
+        Ok(value) -> value
+        Error(_) -> color_style(rest, matcher, default)
+      }
+  }
+}
+
+fn border_style(styles: List(Style)) -> BorderStyle {
+  case styles {
+    [] -> NoBorder
+    [style, ..rest] ->
+      case style {
+        Border(title, fg) -> HasBorder(title, fg)
+        _ -> border_style(rest)
+      }
+  }
+}
+
+fn wrap_mode(styles: List(Style)) -> text.WrapMode {
+  case styles {
+    [] -> text.WordWrap
+    [style, ..rest] ->
+      case style {
+        Wrap(mode) -> mode
+        _ -> wrap_mode(rest)
+      }
+  }
+}
+
+fn truncation(styles: List(Style)) -> Truncation {
+  case styles {
+    [] -> NoTruncation
+    [style, ..rest] ->
+      case style {
+        Truncate(mode) -> mode
+        _ -> truncation(rest)
+      }
+  }
+}
+
+fn box_inner_rect(rect: Rect, styles: List(Style)) -> Rect {
+  let border_offset = case border_style(styles) {
+    NoBorder -> 0
+    HasBorder(_, _) -> 1
+  }
+  let pad = padding(styles)
+  Rect(
+    rect.x + border_offset + pad,
+    rect.y + border_offset + pad,
+    rect.width - border_offset * 2 - pad * 2,
+    rect.height - border_offset * 2 - pad * 2,
+  )
+}
+
+fn max_lines(styles: List(Style)) -> Int {
+  int_style(
+    styles,
+    fn(style) {
+      case style {
+        MaxLines(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    0,
+  )
+}
+
+fn gap(styles: List(Style)) -> Int {
+  int_style(
+    styles,
+    fn(style) {
+      case style {
+        Gap(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    0,
+  )
+}
+
+fn padding(styles: List(Style)) -> Int {
+  int_style(
+    styles,
+    fn(style) {
+      case style {
+        Padding(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    0,
+  )
+}
+
+fn foreground(styles: List(Style)) -> Color {
+  color_style(
+    styles,
+    fn(style) {
+      case style {
+        Foreground(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    Color(1.0, 1.0, 1.0, 1.0),
+  )
+}
+
+fn background(styles: List(Style)) -> Color {
+  color_style(
+    styles,
+    fn(style) {
+      case style {
+        Background(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    Color(0.0, 0.0, 0.0, 1.0),
+  )
+}
+
+fn attributes(styles: List(Style)) -> Int {
+  int_style(
+    styles,
+    fn(style) {
+      case style {
+        Attributes(value) -> Ok(value)
+        _ -> Error(Nil)
+      }
+    },
+    0,
+  )
+}
+
+fn truncate_content(content: String, width: Int, mode: Truncation) -> String {
+  case mode {
+    NoTruncation -> text.truncate_end(content, width)
+    EndTruncate -> text.truncate_end(content, width)
+    MiddleTruncate -> text.truncate_middle(content, width)
   }
 }
 
@@ -254,19 +616,16 @@ fn take_lines(lines: List(String), limit: Int) -> List(String) {
 
 fn draw_border(
   buf: ffi.Buffer,
-  x: Int,
-  y: Int,
-  width: Int,
-  height: Int,
+  rect: Rect,
   title: String,
   fg: Color,
   background: Color,
 ) -> Nil {
-  each_index(width, fn(i) {
+  each_index(rect.width, fn(i) {
     buffer.set_cell(
       buf,
-      x + i,
-      y,
+      rect.x + i,
+      rect.y,
       0x2500,
       color_to_tuple(fg),
       color_to_tuple(background),
@@ -274,8 +633,8 @@ fn draw_border(
     )
     buffer.set_cell(
       buf,
-      x + i,
-      y + height - 1,
+      rect.x + i,
+      rect.y + rect.height - 1,
       0x2500,
       color_to_tuple(fg),
       color_to_tuple(background),
@@ -283,11 +642,11 @@ fn draw_border(
     )
   })
 
-  each_index(height, fn(i) {
+  each_index(rect.height, fn(i) {
     buffer.set_cell(
       buf,
-      x,
-      y + i,
+      rect.x,
+      rect.y + i,
       0x2502,
       color_to_tuple(fg),
       color_to_tuple(background),
@@ -295,8 +654,8 @@ fn draw_border(
     )
     buffer.set_cell(
       buf,
-      x + width - 1,
-      y + i,
+      rect.x + rect.width - 1,
+      rect.y + i,
       0x2502,
       color_to_tuple(fg),
       color_to_tuple(background),
@@ -306,8 +665,8 @@ fn draw_border(
 
   buffer.set_cell(
     buf,
-    x,
-    y,
+    rect.x,
+    rect.y,
     0x250c,
     color_to_tuple(fg),
     color_to_tuple(background),
@@ -315,8 +674,8 @@ fn draw_border(
   )
   buffer.set_cell(
     buf,
-    x + width - 1,
-    y,
+    rect.x + rect.width - 1,
+    rect.y,
     0x2510,
     color_to_tuple(fg),
     color_to_tuple(background),
@@ -324,8 +683,8 @@ fn draw_border(
   )
   buffer.set_cell(
     buf,
-    x,
-    y + height - 1,
+    rect.x,
+    rect.y + rect.height - 1,
     0x2514,
     color_to_tuple(fg),
     color_to_tuple(background),
@@ -333,8 +692,8 @@ fn draw_border(
   )
   buffer.set_cell(
     buf,
-    x + width - 1,
-    y + height - 1,
+    rect.x + rect.width - 1,
+    rect.y + rect.height - 1,
     0x2518,
     color_to_tuple(fg),
     color_to_tuple(background),
@@ -347,8 +706,8 @@ fn draw_border(
       buffer.draw_text(
         buf,
         " " <> title <> " ",
-        x + 2,
-        y,
+        rect.x + 2,
+        rect.y,
         color_to_tuple(fg),
         color_to_tuple(background),
         1,
@@ -396,11 +755,26 @@ fn fold_element(element: Element, acc: a, visit: fn(a, Element) -> a) -> a {
 
 fn element_to_string(element: Element) -> String {
   case element {
-    Box(_, children) -> "Box([" <> children_to_string(children) <> "])"
-    Column(_, children) -> "Column([" <> children_to_string(children) <> "])"
-    Text(_, content) -> "Text(\"" <> content <> "\")"
-    Paragraph(_, content) ->
-      "Paragraph(\"" <> text.truncate_end(content, 24) <> "\")"
+    Box(styles, children) ->
+      "Box("
+      <> styles_to_string(styles)
+      <> ", ["
+      <> children_to_string(children)
+      <> "])"
+    Column(styles, children) ->
+      "Column("
+      <> styles_to_string(styles)
+      <> ", ["
+      <> children_to_string(children)
+      <> "])"
+    Text(styles, content) ->
+      "Text(" <> styles_to_string(styles) <> ", \"" <> content <> "\")"
+    Paragraph(styles, content) ->
+      "Paragraph("
+      <> styles_to_string(styles)
+      <> ", \""
+      <> text.truncate_end(content, 24)
+      <> "\")"
     Spacer(height) -> "Spacer(" <> int.to_string(height) <> ")"
   }
 }
@@ -408,5 +782,37 @@ fn element_to_string(element: Element) -> String {
 fn children_to_string(children: List(Element)) -> String {
   children
   |> list.map(element_to_string)
+  |> string.join(with: ", ")
+}
+
+fn styles_to_string(styles: List(Style)) -> String {
+  styles
+  |> list.map(fn(style) {
+    case style {
+      X(value) -> "X(" <> int.to_string(value) <> ")"
+      Y(value) -> "Y(" <> int.to_string(value) <> ")"
+      Width(value) -> "Width(" <> int.to_string(value) <> ")"
+      Height(value) -> "Height(" <> int.to_string(value) <> ")"
+      Padding(value) -> "Padding(" <> int.to_string(value) <> ")"
+      Gap(value) -> "Gap(" <> int.to_string(value) <> ")"
+      Background(_) -> "Background(...)"
+      Foreground(_) -> "Foreground(...)"
+      Border(title, _) -> "Border(\"" <> title <> "\", ...)"
+      Attributes(value) -> "Attributes(" <> int.to_string(value) <> ")"
+      Wrap(mode) ->
+        case mode {
+          text.NoWrap -> "Wrap(NoWrap)"
+          text.WordWrap -> "Wrap(WordWrap)"
+          text.CharacterWrap -> "Wrap(CharacterWrap)"
+        }
+      MaxLines(value) -> "MaxLines(" <> int.to_string(value) <> ")"
+      Truncate(mode) ->
+        case mode {
+          NoTruncation -> "Truncate(NoTruncation)"
+          EndTruncate -> "Truncate(EndTruncate)"
+          MiddleTruncate -> "Truncate(MiddleTruncate)"
+        }
+    }
+  })
   |> string.join(with: ", ")
 }

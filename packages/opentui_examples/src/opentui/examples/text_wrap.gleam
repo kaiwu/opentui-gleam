@@ -10,39 +10,36 @@ pub fn main() -> Nil {
 
 fn view() -> List(ui.Element) {
   [
-    panel(2, "No wrap", text.wrap(sample, 18, text.NoWrap)),
-    panel(28, "Word wrap", text.wrap(sample, 18, text.WordWrap)),
-    panel(54, "Character wrap", text.wrap(sample, 18, text.CharacterWrap)),
+    panel(2, "No wrap", ui.Wrap(text.NoWrap)),
+    panel(28, "Word wrap", ui.Wrap(text.WordWrap)),
+    panel(54, "Character wrap", ui.Wrap(text.CharacterWrap)),
   ]
 }
 
-fn panel(x: Int, title: String, lines: List(String)) -> ui.Element {
+fn panel(x: Int, title: String, wrap: ui.Style) -> ui.Element {
   ui.Box(
-    ui.BoxProps(
-      x,
-      3,
-      24,
-      18,
-      1,
-      color(common.panel_bg),
-      ui.HasBorder(title, color(common.border_fg)),
-    ),
-    [ui.Column(ui.ColumnProps(0), line_elements(lines))],
+    [
+      ui.X(x),
+      ui.Y(3),
+      ui.Width(24),
+      ui.Height(18),
+      ui.Padding(1),
+      ui.Background(color(common.panel_bg)),
+      ui.Border(title, color(common.border_fg)),
+    ],
+    [
+      ui.Paragraph(
+        [
+          ui.Foreground(color(common.fg_color)),
+          ui.Background(color(common.panel_bg)),
+          wrap,
+          ui.MaxLines(14),
+          ui.Truncate(ui.EndTruncate),
+        ],
+        sample,
+      ),
+    ],
   )
-}
-
-fn line_elements(lines: List(String)) -> List(ui.Element) {
-  case lines {
-    [] -> []
-    [line, ..rest] -> {
-      let item =
-        ui.Text(
-          ui.TextProps(color(common.fg_color), color(common.panel_bg), 0),
-          text.truncate_end(line, 18),
-        )
-      [item, ..line_elements(rest)]
-    }
-  }
 }
 
 fn color(c: #(Float, Float, Float, Float)) -> ui.Color {
