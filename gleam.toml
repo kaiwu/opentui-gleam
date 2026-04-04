@@ -1,6 +1,6 @@
 name = "opentui"
 version = "0.1.0"
-gleam = ">= 1.6.0"
+gleam = ">= 1.15.0"
 
 target = "javascript"
 

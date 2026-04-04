@@ -3,24 +3,28 @@
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────┐
-│         Your Gleam App          │
-├─────────────────────────────────┤
-│   Gleam Public API (idiomatic)  │  ← Result types, validation, Gleam ergonomics
-├─────────────────────────────────┤
-│   ffi.gleam (@external decls)   │  ← Maps to JS shim exports
-├─────────────────────────────────┤
-│   native/ffi-shim.js            │  ← dlopen + all 237 symbol declarations
-├─────────────────────────────────┤
-│   priv/lib/x86_64-linux/        │  ← Compiled native library (.so/.dylib/.dll)
-├─────────────────────────────────┤
-│   native/opentui-zig/           │  ← Git submodule (upstream Zig source)
-│       └── packages/core/src/zig/│
-│           └── lib.zig (C API)   │
-└─────────────────────────────────┘
+┌─────────────────────────────────────┐
+│           Gleam demos/apps          │
+├─────────────────────────────────────┤
+│   opentui/examples/* runnable mains │  ← `gleam run -m ...`
+├─────────────────────────────────────┤
+│   opentui/* Gleam bindings/runtime  │  ← composable Gleam APIs
+├─────────────────────────────────────┤
+│   opentui/ffi.gleam                 │  ← raw `@external` boundary
+├─────────────────────────────────────┤
+│   src/opentui/ffi_shim.js           │  ← single Bun FFI shim
+├─────────────────────────────────────┤
+│   native/opentui-zig/.../zig/lib/*  │  ← compiled native library
+├─────────────────────────────────────┤
+│   native/opentui-zig/               │  ← upstream Zig/TS source of truth
+│       └── packages/core/src/zig/    │
+│           └── lib.zig (C API)       │
+└─────────────────────────────────────┘
 ```
 
 **Why a JS shim?** `bun:ffi` requires a single `dlopen()` call that declares all symbols upfront. Gleam's `@external` can only call individual JS functions — it cannot do `dlopen` itself. The shim bridges this gap.
+
+**Current direction:** this repo is evolving toward a Gleam ecosystem, not a single hardcoded demo. The default `gleam run` entrypoint is a catalog/help surface, while each demo remains directly runnable as its own module.
 
 ---
 
@@ -32,16 +36,21 @@ opentui-gleam/
 ├── manifest.toml
 ├── README.md
 │
+├── AGENTS.md                         # Project direction and architecture notes
 ├── src/                              # Gleam source code
-│   ├── opentui.gleam                 # Top-level module — create/destroy renderer
-│   ├── renderer.gleam                # Renderer operations (render, resize, terminal setup)
-│   ├── buffer.gleam                  # Buffer drawing (text, rects, cells, scissor, opacity)
-│   ├── text_buffer.gleam             # TextBuffer (read-only styled text)
-│   ├── edit_buffer.gleam             # EditBuffer (editable text with undo/redo)
-│   ├── editor_view.gleam             # EditorView (scrollable viewport over EditBuffer)
-│   ├── syntax_style.gleam            # Syntax highlighting style registry
-│   ├── types.gleam                   # Opaque handle types, enums, constants
-│   └── ffi.gleam                     # Low-level @external declarations (raw FFI)
+│   ├── opentui.gleam                 # Default catalog/help entrypoint
+│   └── opentui/
+│       ├── ffi.gleam                 # Low-level @external declarations (raw FFI)
+│       ├── runtime.gleam             # JS-loop/runtime helpers above raw FFI
+│       ├── buffer.gleam              # Buffer drawing API
+│       ├── renderer.gleam            # Renderer operations
+│       ├── edit_buffer.gleam         # Editable text buffer wrapper
+│       ├── text.gleam                # Pure text wrapping/truncation helpers
+│       ├── types.gleam               # Shared enums/constants
+│       ├── catalog.gleam             # Demo registry/help text
+│       └── examples/
+│           ├── common.gleam          # Shared demo chrome/bootstrap helpers
+│           └── editor.gleam          # Runnable editor demo (`gleam run -m opentui/examples/editor`)
 │
 ├── native/
 │   ├── ffi-shim.js                   # JS shim — dlopen + symbol declarations
@@ -58,26 +67,41 @@ opentui-gleam/
 │           ├── editor-view.zig
 │           └── ...                   # ← All other .zig source files
 │
-├── priv/
-│   └── lib/                          # Compiled native libraries (gitignored)
-│       └── x86_64-linux/
-│           └── libopentui.so
-│
 ├── scripts/
-│   └── build-native.sh               # Compiles Zig → .so/.dylib/.dll
+│   └── build-native.sh               # Builds Zig shared library in the submodule output tree
 │
 └── test/
-    └── opentui_test.gleam
+    ├── opentui_test.gleam
+    └── opentui_catalog_test.gleam
 ```
+
+## Running demos
+
+```bash
+# Show the demo catalog
+gleam run
+
+# Run a specific demo directly
+gleam run -m opentui/examples/editor
+```
+
+New demos should be added under `src/opentui/examples/` and registered in `src/opentui/catalog.gleam`.
+
+Current demos include:
+
+- `opentui/examples/editor`
+- `opentui/examples/terminal_title`
+- `opentui/examples/text_wrap`
+- `opentui/examples/text_truncation`
 
 ---
 
-## Layer 1: JS Shim (`native/ffi-shim.js`)
+## Layer 1: JS Shim (`src/opentui/ffi_shim.js`)
 
 Single `dlopen` call, exports flat functions for Gleam `@external`:
 
 ```js
-// native/ffi-shim.js
+// src/opentui/ffi_shim.js
 import { dlopen, FFIType, suffix } from "bun:ffi"
 import { existsSync } from "fs"
 import { join, dirname } from "path"
@@ -94,7 +118,7 @@ const arch = archMap[process.arch] || process.arch
 const os = osMap[process.platform] || process.platform
 const targetDir = `${arch}-${os}`
 
-const libPath = join(__dirname, "..", "priv", "lib", targetDir, `libopentui${suffix}`)
+const libPath = join(process.cwd(), "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`)
 
 if (!existsSync(libPath)) {
   throw new Error(`Native library not found: ${libPath}\nRun: ./scripts/build-native.sh`)
@@ -406,7 +430,7 @@ pub opaque type SyntaxStyle { SyntaxStyle(Int) }
 
 // ── Renderer Lifecycle ──
 
-@external(javascript, "../../native/ffi-shim.js", "createRenderer")
+@external(javascript, "./ffi_shim.js", "createRenderer")
 pub fn create_renderer(
   width: Int,
   height: Int,
@@ -414,27 +438,27 @@ pub fn create_renderer(
   remote: Bool,
 ) -> Int
 
-@external(javascript, "../../native/ffi-shim.js", "destroyRenderer")
+@external(javascript, "./ffi_shim.js", "destroyRenderer")
 pub fn destroy_renderer(renderer: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "render")
+@external(javascript, "./ffi_shim.js", "render")
 pub fn render_frame(renderer: Int, force: Bool) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "resizeRenderer")
+@external(javascript, "./ffi_shim.js", "resizeRenderer")
 pub fn resize_renderer(renderer: Int, width: Int, height: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "setupTerminal")
+@external(javascript, "./ffi_shim.js", "setupTerminal")
 pub fn setup_terminal(renderer: Int, use_alternate_screen: Bool) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "suspendRenderer")
+@external(javascript, "./ffi_shim.js", "suspendRenderer")
 pub fn suspend_renderer(renderer: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "resumeRenderer")
+@external(javascript, "./ffi_shim.js", "resumeRenderer")
 pub fn resume_renderer(renderer: Int) -> Nil
 
 // ── Buffer ──
 
-@external(javascript, "../../native/ffi-shim.js", "createOptimizedBuffer")
+@external(javascript, "./ffi_shim.js", "createOptimizedBuffer")
 pub fn create_buffer(
   width: Int,
   height: Int,
@@ -444,13 +468,13 @@ pub fn create_buffer(
   id_len: Int,
 ) -> Int
 
-@external(javascript, "../../native/ffi-shim.js", "destroyOptimizedBuffer")
+@external(javascript, "./ffi_shim.js", "destroyOptimizedBuffer")
 pub fn destroy_buffer(buffer: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "bufferClear")
+@external(javascript, "./ffi_shim.js", "bufferClear")
 pub fn buffer_clear(buffer: Int, bg: List(Float)) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "bufferDrawText")
+@external(javascript, "./ffi_shim.js", "bufferDrawText")
 pub fn buffer_draw_text(
   buffer: Int,
   text: String,
@@ -462,7 +486,7 @@ pub fn buffer_draw_text(
   attributes: Int,
 ) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "bufferFillRect")
+@external(javascript, "./ffi_shim.js", "bufferFillRect")
 pub fn buffer_fill_rect(
   buffer: Int,
   x: Int,
@@ -472,29 +496,29 @@ pub fn buffer_fill_rect(
   bg: List(Float),
 ) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "getNextBuffer")
+@external(javascript, "./ffi_shim.js", "getNextBuffer")
 pub fn get_next_buffer(renderer: Int) -> Int
 
 // ── Terminal ──
 
-@external(javascript, "../../native/ffi-shim.js", "setTerminalTitle")
+@external(javascript, "./ffi_shim.js", "setTerminalTitle")
 pub fn set_terminal_title(renderer: Int, title: String, title_len: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "enableMouse")
+@external(javascript, "./ffi_shim.js", "enableMouse")
 pub fn enable_mouse(renderer: Int, enable_movement: Bool) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "disableMouse")
+@external(javascript, "./ffi_shim.js", "disableMouse")
 pub fn disable_mouse(renderer: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "enableKittyKeyboard")
+@external(javascript, "./ffi_shim.js", "enableKittyKeyboard")
 pub fn enable_kitty_keyboard(renderer: Int, flags: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "disableKittyKeyboard")
+@external(javascript, "./ffi_shim.js", "disableKittyKeyboard")
 pub fn disable_kitty_keyboard(renderer: Int) -> Nil
 
 // ── Hit Grid ──
 
-@external(javascript, "../../native/ffi-shim.js", "addToHitGrid")
+@external(javascript, "./ffi_shim.js", "addToHitGrid")
 pub fn add_to_hit_grid(
   renderer: Int,
   x: Int,
@@ -504,10 +528,10 @@ pub fn add_to_hit_grid(
   id: Int,
 ) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "clearCurrentHitGrid")
+@external(javascript, "./ffi_shim.js", "clearCurrentHitGrid")
 pub fn clear_hit_grid(renderer: Int) -> Nil
 
-@external(javascript, "../../native/ffi-shim.js", "checkHit")
+@external(javascript, "./ffi_shim.js", "checkHit")
 pub fn check_hit(renderer: Int, x: Int, y: Int) -> Int
 ```
 
@@ -676,7 +700,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ZIG_DIR="$ROOT_DIR/native/opentui-zig/packages/core/src/zig"
-OUTPUT_DIR="$ROOT_DIR/priv/lib"
+TARGET_OUTPUT_DIR="$ZIG_DIR/lib/$TARGET"
 
 # Detect platform
 ARCH=$(uname -m)
@@ -705,7 +729,7 @@ cd "$ZIG_DIR"
 # Build the native library
 zig build -Doptimize=ReleaseSafe
 
-# Copy the output to priv/lib
+# The Zig build installs the shared library directly into the submodule output tree
 mkdir -p "$TARGET_OUTPUT_DIR"
 
 # Find and copy the built library
@@ -809,7 +833,7 @@ gleam test
 | **JS shim layer** | `bun:ffi` needs one `dlopen` with all symbols. Gleam `@external` can only call individual functions. The shim bridges this. |
 | **Opaque handle types** | `ffi.Renderer(Int)` not bare `Int` — prevents passing a `Buffer` where a `Renderer` is expected. |
 | **Git submodule for Zig** | Clean upstream tracking. `git submodule update --remote` pulls latest. No vendoring noise. |
-| **`priv/lib/` for compiled libs** | Gleam convention for runtime assets. Included in hex packages. |
+| **Direct submodule library loading** | The shim loads the built shared library straight from `native/opentui-zig/packages/core/src/zig/lib/<target>/`. |
 | **Separate `ffi.gleam` from public API** | Raw FFI is unsafe (returns 0 on failure, raw ints). Public modules wrap with `Result` types and validation. |
 | **`Result` wrappers** | Every `create_*` function returns `Result(Handle, String)` — Gleam-idiomatic error handling instead of checking for null pointers. |
 | **RGBA as tuples** | `#(Float, Float, Float, Float)` in Gleam, converted to `List(Float)` at FFI boundary. |
@@ -822,7 +846,7 @@ gleam test
 
 2. **`JSCallback` lifetime**: If you bind `setLogCallback` or `setEventCallback`, the `JSCallback` must stay alive or you get a segfault. Store it in a module-level variable, not a local.
 
-3. **`build.zig` output path**: The upstream `build.zig` installs to `../lib/{target}/` relative to the zig directory. Your build script copies from there to `priv/lib/`. If upstream changes the path, update the script.
+3. **`build.zig` output path**: The upstream `build.zig` installs to `lib/{target}/` under `packages/core/src/zig/`. If upstream changes the path, update the shim resolver and build script.
 
 4. **Platform detection**: The shim maps `process.arch` (`x64`/`arm64`) to Zig target names (`x86_64`/`aarch64`). If Bun ever changes these, update the map.
 
@@ -858,7 +882,7 @@ pub fn create_cli_renderer(config: JsConfig) -> Promise(Renderer)
 pub fn create_box(renderer: Renderer, options: JsBoxOptions) -> Box
 ```
 
-**No Zig submodule. No `build-native.sh`. No `ffi-shim.js`. No `priv/lib/`.** Just `bun install @opentui/core` and declare `@external` functions.
+**No Zig submodule. No `build-native.sh`. No custom `ffi_shim.js`.** Just `bun install @opentui/core` and declare `@external` functions.
 
 ### Path B: Direct Zig FFI (Original)
 
@@ -1026,7 +1050,7 @@ If you go with Path B, the three-layer FFI boilerplate is machine-generated. A s
 ```bash
 # scripts/generate-ffi.sh — run when Zig updates
 # Parses packages/core/src/zig/lib.zig and emits:
-#   1. native/ffi-shim.js       (dlopen declarations)
+#   1. src/opentui/ffi_shim.js  (dlopen declarations)
 #   2. src/ffi.gleam            (@external declarations)
 #   3. src/ffi_auto.gleam       (auto-generated, never hand-edited)
 ```
@@ -1101,7 +1125,7 @@ The ergonomic tax is writing the `@external` declaration. Once written, it's jus
 
 2. **`JSCallback` lifetime**: If you bind `setLogCallback` or `setEventCallback`, the `JSCallback` must stay alive or you get a segfault. Store it in a module-level variable, not a local.
 
-3. **`build.zig` output path** (Path B only): The upstream `build.zig` installs to `../lib/{target}/` relative to the zig directory. Your build script copies from there to `priv/lib/`. If upstream changes the path, update the script.
+3. **`build.zig` output path** (Path B only): The upstream `build.zig` installs to `lib/{target}/` under `packages/core/src/zig/`. If upstream changes the path, update the shim resolver and build script.
 
 4. **Platform detection** (Path B only): The shim maps `process.arch` (`x64`/`arm64`) to Zig target names (`x86_64`/`aarch64`). If Bun ever changes these, update the map.
 

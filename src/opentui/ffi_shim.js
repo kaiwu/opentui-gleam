@@ -1,24 +1,60 @@
-// native/ffi-shim.js
-// Single dlopen call — exports flat functions for Gleam @external declarations
 import { dlopen, FFIType, suffix, ptr } from "bun:ffi"
 import { existsSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
-
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Resolve platform-specific library
+if (process.env.OPENTUI_FORCE_EXPLICIT_WIDTH === undefined) {
+  process.env.OPENTUI_FORCE_EXPLICIT_WIDTH = "false"
+}
+
 const archMap = { x64: "x86_64", arm64: "aarch64" }
 const osMap = { darwin: "macos", linux: "linux", win32: "windows" }
 const arch = archMap[process.arch] || process.arch
 const os = osMap[process.platform] || process.platform
 const targetDir = `${arch}-${os}`
 
-const libPath = join(__dirname, "..", "priv", "lib", targetDir, `libopentui.${suffix}`)
+function resolveProjectRoot() {
+  const candidates = [process.cwd()]
+  let current = __dirname
 
-if (!existsSync(libPath)) {
-  throw new Error(`Native library not found: ${libPath}\nRun: ./scripts/build-native.sh`)
+  for (let i = 0; i < 8; i += 1) {
+    candidates.push(current)
+    const parent = join(current, "..")
+    if (parent === current) {
+      break
+    }
+    current = parent
+  }
+
+  for (const candidate of candidates) {
+    if (existsSync(join(candidate, "gleam.toml")) && existsSync(join(candidate, "native", "opentui-zig"))) {
+      return candidate
+    }
+  }
+
+  throw new Error("Could not locate opentui-gleam project root for FFI loading")
 }
+
+function resolveNativeLibraryPath() {
+  const root = resolveProjectRoot()
+  const candidates = [
+    join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
+    join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
+  ]
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  throw new Error(
+    `Native library not found in submodule build outputs. Expected one of:\n${candidates.join("\n")}\nRun: ./scripts/build-native.sh`,
+  )
+}
+
+const libPath = resolveNativeLibraryPath()
 
 const { symbols: raw } = dlopen(libPath, {
   // === Renderer Lifecycle ===
@@ -287,8 +323,8 @@ const { symbols: raw } = dlopen(libPath, {
 // ── Helpers ──
 
 // Gleam sends List(Float) as JS arrays. Convert to Float64Array for ptr args.
-function toFloat64Buf(arr) {
-  return new Float64Array(arr)
+function toFloat32Buf(arr) {
+  return new Float32Array(arr)
 }
 
 // Gleam sends String as JS string. Convert to Buffer for ptr args.
@@ -342,19 +378,19 @@ export function createOptimizedBuffer(width, height, respectAlpha, widthMethod, 
 }
 
 export function bufferClear(buffer, bg) {
-  raw.bufferClear(buffer, toFloat64Buf(bg))
+  raw.bufferClear(buffer, toFloat32Buf(bg))
 }
 
 export function bufferDrawText(buffer, text, textLen, x, y, fg, bg, attributes) {
-  raw.bufferDrawText(buffer, toBuf(text), textLen, x, y, toFloat64Buf(fg), toFloat64Buf(bg), attributes)
+  raw.bufferDrawText(buffer, toBuf(text), textLen, x, y, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
 }
 
 export function bufferFillRect(buffer, x, y, width, height, bg) {
-  raw.bufferFillRect(buffer, x, y, width, height, toFloat64Buf(bg))
+  raw.bufferFillRect(buffer, x, y, width, height, toFloat32Buf(bg))
 }
 
 export function bufferSetCell(buffer, x, y, ch, fg, bg, attributes) {
-  raw.bufferSetCell(buffer, x, y, ch, toFloat64Buf(fg), toFloat64Buf(bg), attributes)
+  raw.bufferSetCell(buffer, x, y, ch, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
 }
 
 export function setTerminalTitle(renderer, title, titleLen) {
@@ -414,12 +450,19 @@ export function editBufferGetCursor(buffer) {
 
 export function editBufferGetTextAsString(buffer) {
   const outBuf = Buffer.alloc(4096)
-  const len = raw.editBufferGetText(buffer, outBuf, 4096)
-  return outBuf.subarray(0, len).toString("utf-8")
+  const rawLen = raw.editBufferGetText(buffer, outBuf, 4096)
+  const len = Number(rawLen)
+
+  if (!Number.isFinite(len) || len <= 0) {
+    return ""
+  }
+
+  const boundedLen = Math.min(outBuf.length, Math.floor(len))
+  return outBuf.subarray(0, boundedLen).toString("utf-8")
 }
 
 export function syntaxStyleRegister(style, name, nameLen, fg, bg, attributes) {
-  return raw.syntaxStyleRegister(style, toBuf(name), nameLen, toFloat64Buf(fg), toFloat64Buf(bg), attributes)
+  return raw.syntaxStyleRegister(style, toBuf(name), nameLen, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
 }
 
 // Callbacks — wrap to convert C-string args to JS strings
@@ -437,11 +480,206 @@ export function log(msg) {
   console.log(msg)
 }
 
+const DEMO_INPUT_TIMEOUT_MS = 20
+
+function utf8CharLength(byte) {
+  if (byte < 0x80) return 1
+  if (byte >= 0xc2 && byte <= 0xdf) return 2
+  if (byte >= 0xe0 && byte <= 0xef) return 3
+  if (byte >= 0xf0 && byte <= 0xf4) return 4
+  return 0
+}
+
+function scanEscTerminatedSequence(buffer, start) {
+  let i = start + 2
+
+  while (i < buffer.length) {
+    if (buffer[i] === 0x07) {
+      return i + 1
+    }
+
+    if (buffer[i] === 0x1b) {
+      if (i + 1 >= buffer.length) {
+        return -1
+      }
+
+      if (buffer[i + 1] === 0x5c) {
+        return i + 2
+      }
+    }
+
+    i += 1
+  }
+
+  return -1
+}
+
+function scanCsiSequence(buffer, start) {
+  let i = start + 2
+
+  while (i < buffer.length) {
+    const byte = buffer[i]
+    if (byte >= 0x40 && byte <= 0x7e) {
+      return i + 1
+    }
+    i += 1
+  }
+
+  return -1
+}
+
+function parseInputToken(buffer, start) {
+  const byte = buffer[start]
+
+  if (byte === 0x03) {
+    return { next: start + 1, token: "\x03" }
+  }
+
+  if (byte === 0x0d || byte === 0x0a) {
+    return { next: start + 1, token: "\n" }
+  }
+
+  if (byte === 0x08 || byte === 0x7f) {
+    return { next: start + 1, token: "\x7f" }
+  }
+
+  if (byte === 0x1b) {
+    if (start + 1 >= buffer.length) {
+      return null
+    }
+
+    const nextByte = buffer[start + 1]
+
+    if (nextByte === 0x4f) {
+      if (start + 2 >= buffer.length) {
+        return null
+      }
+
+      switch (buffer[start + 2]) {
+        case 0x41:
+          return { next: start + 3, token: "\x1b[A" }
+        case 0x42:
+          return { next: start + 3, token: "\x1b[B" }
+        case 0x43:
+          return { next: start + 3, token: "\x1b[C" }
+        case 0x44:
+          return { next: start + 3, token: "\x1b[D" }
+        default:
+          return { next: start + 3, token: null }
+      }
+    }
+
+    if (nextByte === 0x5b) {
+      const end = scanCsiSequence(buffer, start)
+      if (end === -1) {
+        return null
+      }
+
+      const finalByte = buffer[end - 1]
+      if (finalByte === 0x41) return { next: end, token: "\x1b[A" }
+      if (finalByte === 0x42) return { next: end, token: "\x1b[B" }
+      if (finalByte === 0x43) return { next: end, token: "\x1b[C" }
+      if (finalByte === 0x44) return { next: end, token: "\x1b[D" }
+
+      return { next: end, token: null }
+    }
+
+    if (nextByte === 0x5d || nextByte === 0x50 || nextByte === 0x5f || nextByte === 0x5e) {
+      const end = scanEscTerminatedSequence(buffer, start)
+      if (end === -1) {
+        return null
+      }
+
+      return { next: end, token: null }
+    }
+
+    if (nextByte >= 0x20 && nextByte <= 0x7e) {
+      return { next: start + 2, token: String.fromCharCode(nextByte) }
+    }
+
+    return { next: start + 2, token: null }
+  }
+
+  if (byte < 0x20) {
+    return { next: start + 1, token: null }
+  }
+
+  if (byte < 0x80) {
+    return { next: start + 1, token: String.fromCharCode(byte) }
+  }
+
+  const charLength = utf8CharLength(byte)
+  if (charLength === 0) {
+    return { next: start + 1, token: null }
+  }
+
+  if (start + charLength > buffer.length) {
+    return null
+  }
+
+  return {
+    next: start + charLength,
+    token: buffer.subarray(start, start + charLength).toString("utf-8"),
+  }
+}
+
+class DemoInputParser {
+  constructor() {
+    this.pending = Buffer.alloc(0)
+    this.flushTimer = null
+  }
+
+  push(chunk, onToken) {
+    this.pending = this.pending.length === 0 ? Buffer.from(chunk) : Buffer.concat([this.pending, chunk])
+    this.clearFlushTimer()
+
+    let offset = 0
+    while (offset < this.pending.length) {
+      const parsed = parseInputToken(this.pending, offset)
+      if (parsed === null) {
+        break
+      }
+
+      offset = parsed.next
+      if (parsed.token !== null) {
+        onToken(parsed.token)
+      }
+    }
+
+    this.pending = offset === 0 ? this.pending : this.pending.subarray(offset)
+
+    if (this.pending.length > 0) {
+      this.flushTimer = setTimeout(() => {
+        this.pending = Buffer.alloc(0)
+        this.flushTimer = null
+      }, DEMO_INPUT_TIMEOUT_MS)
+    }
+  }
+
+  clearFlushTimer() {
+    if (this.flushTimer !== null) {
+      clearTimeout(this.flushTimer)
+      this.flushTimer = null
+    }
+  }
+}
+
+function cleanupAndExit(rendererPtr) {
+  raw.disableMouse(rendererPtr)
+  raw.destroyRenderer(rendererPtr)
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false)
+  }
+  process.stdin.pause()
+  process.exit(0)
+}
+
 // Run the demo loop: draws the frame, then listens for keys.
 // On each keypress, calls drawFn() and re-renders.
 // Quits when 'q' is pressed.
 export function runDemoLoop(renderer, drawFn) {
   const r = Number(renderer) // Gleam opaque -> Int -> JS number
+  const parser = new DemoInputParser()
 
   // Initial render
   drawFn()
@@ -451,21 +689,14 @@ export function runDemoLoop(renderer, drawFn) {
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true)
   }
-  process.stdin.setEncoding("utf-8")
   process.stdin.resume()
 
-  process.stdin.on("data", (key) => {
-    if (key === "\x03" || key === "q") {
-      // Ctrl+C or 'q' — cleanup and exit
-      raw.disableMouse(r)
-      raw.destroyRenderer(r)
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(false)
+  process.stdin.on("data", (chunk) => {
+    parser.push(chunk, (token) => {
+      if (token === "\x03" || token === "q") {
+        cleanupAndExit(r)
       }
-      process.stdin.pause()
-      process.exit(0)
-    }
-    // Any other key — redraw
+    })
     drawFn()
     raw.render(r, true)
   })
@@ -474,6 +705,7 @@ export function runDemoLoop(renderer, drawFn) {
 // Run the editor loop: passes keypresses to onKey, then calls drawFn and re-renders.
 export function runEditorLoop(renderer, onKey, drawFn) {
   const r = Number(renderer)
+  const parser = new DemoInputParser()
 
   // Initial render
   drawFn()
@@ -483,22 +715,15 @@ export function runEditorLoop(renderer, onKey, drawFn) {
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true)
   }
-  process.stdin.setEncoding("utf-8")
   process.stdin.resume()
 
-  process.stdin.on("data", (key) => {
-    if (key === "\x03" || key === "q") {
-      // Ctrl+C or 'q' — cleanup and exit
-      raw.disableMouse(r)
-      raw.destroyRenderer(r)
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(false)
+  process.stdin.on("data", (chunk) => {
+    parser.push(chunk, (token) => {
+      if (token === "\x03" || token === "q") {
+        cleanupAndExit(r)
       }
-      process.stdin.pause()
-      process.exit(0)
-    }
-    // Pass key to editor, then redraw
-    onKey(key)
+      onKey(token)
+    })
     drawFn()
     raw.render(r, true)
   })

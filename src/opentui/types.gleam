@@ -1,6 +1,3 @@
-// src/types.gleam
-// Opaque handle types, enums, and constants
-
 pub type WidthMethod {
   Normal
   Half

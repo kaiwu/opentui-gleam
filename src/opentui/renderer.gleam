@@ -1,8 +1,5 @@
-// src/renderer.gleam
-// Idiomatic Gleam API for renderer operations
-
 import gleam/string
-import ffi
+import opentui/ffi
 
 pub type ScreenMode {
   AlternateScreen
@@ -20,8 +17,7 @@ pub type RendererConfig {
 }
 
 pub fn create(config: RendererConfig) -> Result(ffi.Renderer, String) {
-  let ptr =
-    ffi.create_renderer(config.width, config.height, False, False)
+  let ptr = ffi.create_renderer(config.width, config.height, False, False)
   case ptr {
     0 -> Error("Failed to create renderer")
     p -> Ok(ffi.renderer(p))

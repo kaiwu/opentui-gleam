@@ -1,15 +1,12 @@
-// src/buffer.gleam
-// Idiomatic Gleam API for buffer drawing operations
-
 import gleam/string
-import ffi
-import types.{type WidthMethod}
+import opentui/ffi
+import opentui/types as core_types
 
 pub fn create(
   width: Int,
   height: Int,
   respect_alpha: Bool,
-  width_method: WidthMethod,
+  width_method: core_types.WidthMethod,
   id: String,
 ) -> Result(ffi.Buffer, String) {
   let ptr =
@@ -17,7 +14,7 @@ pub fn create(
       width,
       height,
       respect_alpha,
-      types.width_method_to_int(width_method),
+      core_types.width_method_to_int(width_method),
       id,
       string.byte_size(id),
     )
@@ -119,8 +116,6 @@ pub fn pop_opacity(buffer: ffi.Buffer) -> Nil {
 pub fn get_next_buffer(renderer: ffi.Renderer) -> ffi.Buffer {
   ffi.buffer(ffi.get_next_buffer(ffi.renderer_to_int(renderer)))
 }
-
-// ── Internal helpers ──
 
 fn rgba_to_list(c: #(Float, Float, Float, Float)) -> List(Float) {
   [c.0, c.1, c.2, c.3]
