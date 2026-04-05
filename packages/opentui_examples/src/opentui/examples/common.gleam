@@ -1,3 +1,4 @@
+import gleam/list
 import opentui/buffer
 import opentui/ffi
 import opentui/renderer
@@ -20,6 +21,18 @@ pub const panel_bg = #(0.05, 0.07, 0.12, 1.0)
 pub const status_bg = #(0.22, 0.24, 0.3, 1.0)
 
 pub const border_fg = #(0.45, 0.5, 0.65, 1.0)
+
+pub const accent_blue = #(0.33, 0.57, 0.98, 1.0)
+
+pub const accent_green = #(0.36, 0.82, 0.58, 1.0)
+
+pub const accent_orange = #(0.94, 0.66, 0.31, 1.0)
+
+pub const accent_pink = #(0.88, 0.41, 0.73, 1.0)
+
+pub const accent_yellow = #(0.96, 0.82, 0.36, 1.0)
+
+pub const muted_fg = #(0.72, 0.75, 0.82, 1.0)
 
 pub fn run_static_demo(
   title: String,
@@ -97,6 +110,76 @@ pub fn draw_panel(
   buffer.set_cell(buf, x + w - 1, y + h - 1, 0x2518, border_fg, bg_color, 0)
 
   buffer.draw_text(buf, " " <> title <> " ", x + 2, y, fg_color, bg_color, 1)
+}
+
+pub fn panel(
+  title: String,
+  x: Int,
+  y: Int,
+  w: Int,
+  h: Int,
+  children: List(ui.Element),
+) -> ui.Element {
+  panel_with_background(title, x, y, w, h, panel_bg, children)
+}
+
+pub fn panel_with_background(
+  title: String,
+  x: Int,
+  y: Int,
+  w: Int,
+  h: Int,
+  bg: #(Float, Float, Float, Float),
+  children: List(ui.Element),
+) -> ui.Element {
+  ui.Box(
+    [
+      ui.X(x),
+      ui.Y(y),
+      ui.Width(w),
+      ui.Height(h),
+      ui.Padding(1),
+      ui.Background(color(bg)),
+      ui.Border(title, color(border_fg)),
+    ],
+    children,
+  )
+}
+
+pub fn line(content: String) -> ui.Element {
+  line_with([], content)
+}
+
+pub fn line_with(extra_styles: List(ui.Style), content: String) -> ui.Element {
+  ui.Text(
+    list.append(
+      [ui.Foreground(color(fg_color)), ui.Background(color(panel_bg))],
+      extra_styles,
+    ),
+    content,
+  )
+}
+
+pub fn paragraph(content: String) -> ui.Element {
+  paragraph_with([], content)
+}
+
+pub fn paragraph_with(
+  extra_styles: List(ui.Style),
+  content: String,
+) -> ui.Element {
+  ui.Paragraph(
+    list.append(
+      [
+        ui.Foreground(color(fg_color)),
+        ui.Background(color(panel_bg)),
+        ui.Wrap(text.WordWrap),
+        ui.Truncate(ui.EndTruncate),
+      ],
+      extra_styles,
+    ),
+    content,
+  )
 }
 
 fn render_static_frame(
@@ -179,11 +262,11 @@ fn text_line(content: String) -> ui.Element {
   )
 }
 
-fn color(c: #(Float, Float, Float, Float)) -> ui.Color {
+pub fn color(c: #(Float, Float, Float, Float)) -> ui.Color {
   ui.Color(c.0, c.1, c.2, c.3)
 }
 
-fn each_index(n: Int, f: fn(Int) -> Nil) -> Nil {
+pub fn each_index(n: Int, f: fn(Int) -> Nil) -> Nil {
   case n <= 0 {
     True -> Nil
     False -> each_index_loop(0, n, f)

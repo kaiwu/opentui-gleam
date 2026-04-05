@@ -12,6 +12,18 @@ This package is also the execution backlog for porting the upstream TypeScript d
 ./scripts/run-example.sh terminal-title
 ./scripts/run-example.sh text-wrap
 ./scripts/run-example.sh text-truncation
+./scripts/run-example.sh simple-layout-example
+./scripts/run-example.sh relative-positioning-demo
+./scripts/run-example.sh nested-zindex-demo
+./scripts/run-example.sh transparency-demo
+./scripts/run-example.sh opacity-example
+./scripts/run-example.sh vnode-composition-demo
+./scripts/run-example.sh styled-text-demo
+./scripts/run-example.sh text-node-demo
+./scripts/run-example.sh link-demo
+./scripts/run-example.sh terminal
+./scripts/run-example.sh fonts
+./scripts/run-example.sh grayscale-buffer-demo
 ```
 
 All planned upstream demo ids are also wired into `./scripts/run-example.sh`. Unfinished demos run as stubs and explain which phase and lower-level capabilities are still needed.
@@ -31,18 +43,18 @@ That means we do **not** blindly port every example at once. Instead, each demo 
 - [x] `terminal-title` ← upstream `terminal-title.ts`
 - [x] `text-wrap` ← upstream `text-wrap.ts`
 - [x] `text-truncation` ← upstream `text-truncation-demo.ts`
-- [ ] `simple-layout-example`
-- [ ] `relative-positioning-demo`
-- [ ] `nested-zindex-demo`
-- [ ] `transparency-demo`
-- [ ] `opacity-example`
-- [ ] `vnode-composition-demo`
-- [ ] `styled-text-demo`
-- [ ] `text-node-demo`
-- [ ] `link-demo`
-- [ ] `terminal`
-- [ ] `fonts`
-- [ ] `grayscale-buffer-demo`
+- [x] `simple-layout-example`
+- [x] `relative-positioning-demo`
+- [x] `nested-zindex-demo`
+- [x] `transparency-demo`
+- [x] `opacity-example`
+- [x] `vnode-composition-demo`
+- [x] `styled-text-demo`
+- [x] `text-node-demo`
+- [x] `link-demo`
+- [x] `terminal`
+- [x] `fonts`
+- [x] `grayscale-buffer-demo`
 
 Primary pressure on the stack:
 

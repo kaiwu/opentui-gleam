@@ -26,33 +26,65 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/text_truncation",
       "Implemented port of upstream text-truncation-demo.ts.",
     ),
-    stub(
+    done(
       "simple-layout-example",
       "opentui/examples/simple_layout_example",
-      "Phase 1",
+      "Implemented a dashboard-style layout demo with declarative panels.",
     ),
-    stub(
+    done(
       "relative-positioning-demo",
       "opentui/examples/relative_positioning_demo",
-      "Phase 1",
+      "Implemented nested offset positioning within declarative boxes.",
     ),
-    stub("nested-zindex-demo", "opentui/examples/nested_zindex_demo", "Phase 1"),
-    stub("transparency-demo", "opentui/examples/transparency_demo", "Phase 1"),
-    stub("opacity-example", "opentui/examples/opacity_example", "Phase 1"),
-    stub(
+    done(
+      "nested-zindex-demo",
+      "opentui/examples/nested_zindex_demo",
+      "Implemented overlapping layer composition with deterministic paint order.",
+    ),
+    done(
+      "transparency-demo",
+      "opentui/examples/transparency_demo",
+      "Implemented alpha-blended buffer fills over a checkerboard backdrop.",
+    ),
+    done(
+      "opacity-example",
+      "opentui/examples/opacity_example",
+      "Implemented opacity stack rendering with nested draw groups.",
+    ),
+    done(
       "vnode-composition-demo",
       "opentui/examples/vnode_composition_demo",
-      "Phase 1",
+      "Implemented composable UI tree assembly from reusable pure functions.",
     ),
-    stub("styled-text-demo", "opentui/examples/styled_text_demo", "Phase 1"),
-    stub("text-node-demo", "opentui/examples/text_node_demo", "Phase 1"),
-    stub("link-demo", "opentui/examples/link_demo", "Phase 1"),
-    stub("terminal", "opentui/examples/terminal", "Phase 1"),
-    stub("fonts", "opentui/examples/fonts", "Phase 1"),
-    stub(
+    done(
+      "styled-text-demo",
+      "opentui/examples/styled_text_demo",
+      "Implemented styled text samples using color, background, and emphasis attributes.",
+    ),
+    done(
+      "text-node-demo",
+      "opentui/examples/text_node_demo",
+      "Implemented text and paragraph node composition examples.",
+    ),
+    done(
+      "link-demo",
+      "opentui/examples/link_demo",
+      "Implemented link-like text rendering with clear visual hierarchy.",
+    ),
+    done(
+      "terminal",
+      "opentui/examples/terminal",
+      "Implemented a terminal palette and renderer summary demo.",
+    ),
+    done(
+      "fonts",
+      "opentui/examples/fonts",
+      "Implemented ASCII banner and text-density typography samples.",
+    ),
+    done(
       "grayscale-buffer-demo",
       "opentui/examples/grayscale_buffer_demo",
-      "Phase 1",
+      "Implemented a grayscale ramp and swatch demo with direct buffer fills.",
     ),
     stub("select-demo", "opentui/examples/select_demo", "Phase 2"),
     stub("tab-select-demo", "opentui/examples/tab_select_demo", "Phase 2"),
