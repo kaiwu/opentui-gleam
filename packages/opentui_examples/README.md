@@ -24,6 +24,18 @@ This package is also the execution backlog for porting the upstream TypeScript d
 ./scripts/run-example.sh terminal
 ./scripts/run-example.sh fonts
 ./scripts/run-example.sh grayscale-buffer-demo
+./scripts/run-example.sh input-demo
+./scripts/run-example.sh select-demo
+./scripts/run-example.sh tab-select-demo
+./scripts/run-example.sh slider-demo
+./scripts/run-example.sh scroll-example
+./scripts/run-example.sh sticky-scroll-example
+./scripts/run-example.sh focus-restore-demo
+./scripts/run-example.sh keypress-debug-demo
+./scripts/run-example.sh split-mode-demo
+./scripts/run-example.sh mouse-interaction-demo
+./scripts/run-example.sh scrollbox-mouse-test
+./scripts/run-example.sh scrollbox-overlay-hit-test
 ```
 
 All planned upstream demo ids are also wired into `./scripts/run-example.sh`. Unfinished demos run as stubs and explain which phase and lower-level capabilities are still needed.
@@ -65,18 +77,18 @@ Primary pressure on the stack:
 
 ## Phase 2 — widgets, input, scrolling, focus
 
-- [ ] `select-demo`
-- [ ] `tab-select-demo`
-- [ ] `input-demo`
-- [ ] `slider-demo`
-- [ ] `scroll-example`
-- [ ] `sticky-scroll-example`
+- [x] `select-demo`
+- [x] `tab-select-demo`
+- [x] `input-demo`
+- [x] `slider-demo`
+- [x] `scroll-example`
+- [x] `sticky-scroll-example`
 - [ ] `scrollbox-mouse-test`
 - [ ] `scrollbox-overlay-hit-test`
 - [ ] `mouse-interaction-demo`
-- [ ] `focus-restore-demo`
-- [ ] `keypress-debug-demo`
-- [ ] `split-mode-demo`
+- [x] `focus-restore-demo`
+- [x] `keypress-debug-demo`
+- [x] `split-mode-demo`
 
 Primary pressure on the stack:
 

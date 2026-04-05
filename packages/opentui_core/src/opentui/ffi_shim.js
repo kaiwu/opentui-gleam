@@ -599,7 +599,10 @@ function parseInputToken(buffer, start) {
       if (finalByte === 0x43) return { next: end, token: "\x1b[C" }
       if (finalByte === 0x44) return { next: end, token: "\x1b[D" }
 
-      return { next: end, token: null }
+      return {
+        next: end,
+        token: buffer.subarray(start, end).toString("utf-8"),
+      }
     }
 
     if (nextByte === 0x5d || nextByte === 0x50 || nextByte === 0x5f || nextByte === 0x5e) {
@@ -764,6 +767,32 @@ export function runEditorLoop(renderer, onKey, drawFn) {
         cleanupAndExit(r)
       }
       onKey(token)
+    })
+    drawFn()
+    raw.render(r, true)
+  })
+}
+
+export function runEventLoop(renderer, onEvent, drawFn) {
+  const r = Number(renderer)
+  const parser = new DemoInputParser()
+  const cancelStartupRerenders = scheduleStartupRerenders(r, drawFn)
+
+  drawFn()
+  raw.render(r, true)
+
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true)
+  }
+  process.stdin.resume()
+
+  process.stdin.on("data", (chunk) => {
+    parser.push(chunk, (token) => {
+      if (token === "\x03" || token === "q") {
+        cancelStartupRerenders()
+        cleanupAndExit(r)
+      }
+      onEvent(token)
     })
     drawFn()
     raw.render(r, true)

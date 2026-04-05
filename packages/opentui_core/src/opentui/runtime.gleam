@@ -10,3 +10,10 @@ pub fn run_editor_loop(
   on_key: fn(String) -> Nil,
   draw_fn: fn() -> Nil,
 ) -> Nil
+
+@external(javascript, "./ffi_shim.js", "runEventLoop")
+pub fn run_event_loop(
+  renderer: Int,
+  on_event: fn(String) -> Nil,
+  draw_fn: fn() -> Nil,
+) -> Nil

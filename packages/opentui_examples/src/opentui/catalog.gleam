@@ -86,38 +86,66 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/grayscale_buffer_demo",
       "Implemented a grayscale ramp and swatch demo with direct buffer fills.",
     ),
-    stub("select-demo", "opentui/examples/select_demo", "Phase 2"),
-    stub("tab-select-demo", "opentui/examples/tab_select_demo", "Phase 2"),
-    stub("input-demo", "opentui/examples/input_demo", "Phase 2"),
-    stub("slider-demo", "opentui/examples/slider_demo", "Phase 2"),
-    stub("scroll-example", "opentui/examples/scroll_example", "Phase 2"),
-    stub(
+    done(
+      "select-demo",
+      "opentui/examples/select_demo",
+      "Implemented keyboard-driven selection and focus semantics.",
+    ),
+    done(
+      "tab-select-demo",
+      "opentui/examples/tab_select_demo",
+      "Implemented keyboard tab switching with pure active-tab state.",
+    ),
+    done(
+      "input-demo",
+      "opentui/examples/input_demo",
+      "Implemented a single-line keyboard input demo on top of edit_buffer.",
+    ),
+    done(
+      "slider-demo",
+      "opentui/examples/slider_demo",
+      "Implemented keyboard slider state and rendering while mouse input remains pending.",
+    ),
+    done(
+      "scroll-example",
+      "opentui/examples/scroll_example",
+      "Implemented keyboard-driven scroll state with pure offset clamping.",
+    ),
+    done(
       "sticky-scroll-example",
       "opentui/examples/sticky_scroll_example",
-      "Phase 2",
+      "Implemented sticky header scroll semantics with keyboard-controlled offset.",
     ),
-    stub(
+    done(
       "scrollbox-mouse-test",
       "opentui/examples/scrollbox_mouse_test",
-      "Phase 2",
+      "Implemented mouse-wheel scrolling and row hit-testing over a rebuilt hit grid.",
     ),
-    stub(
+    done(
       "scrollbox-overlay-hit-test",
       "opentui/examples/scrollbox_overlay_hit_test",
-      "Phase 2",
+      "Implemented overlay-versus-dialog hit precedence with runtime hit regions.",
     ),
-    stub(
+    done(
       "mouse-interaction-demo",
       "opentui/examples/mouse_interaction_demo",
-      "Phase 2",
+      "Implemented click and wheel interaction through the new runtime event path.",
     ),
-    stub("focus-restore-demo", "opentui/examples/focus_restore_demo", "Phase 2"),
-    stub(
+    done(
+      "focus-restore-demo",
+      "opentui/examples/focus_restore_demo",
+      "Implemented focus restoration across dynamically hidden widgets.",
+    ),
+    done(
       "keypress-debug-demo",
       "opentui/examples/keypress_debug_demo",
-      "Phase 2",
+      "Implemented keyboard stream inspection using the current editor loop.",
     ),
-    stub("split-mode-demo", "opentui/examples/split_mode_demo", "Phase 2"),
+    done(
+      "split-mode-demo",
+      "opentui/examples/split_mode_demo",
+      "Implemented keyboard-controlled split pane layout and focus switching.",
+    ),
     stub(
       "text-selection-demo",
       "opentui/examples/text_selection_demo",

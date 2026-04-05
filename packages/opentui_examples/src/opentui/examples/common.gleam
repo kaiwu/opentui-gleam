@@ -1,6 +1,7 @@
 import gleam/list
 import opentui/buffer
 import opentui/ffi
+import opentui/input
 import opentui/renderer
 import opentui/runtime
 import opentui/text
@@ -73,6 +74,138 @@ pub fn run_static_ui_demo(
   run_static_demo(title, term_title, fn(buf) {
     render_static_frame_ui(buf, elements)
   })
+}
+
+pub fn run_interactive_demo(
+  title: String,
+  term_title: String,
+  on_key: fn(String) -> Nil,
+  draw_body: fn(ffi.Buffer) -> Nil,
+) -> Nil {
+  run_interactive_demo_with_setup(
+    title,
+    term_title,
+    fn(_renderer) { Nil },
+    on_key,
+    draw_body,
+  )
+}
+
+pub fn run_interactive_demo_with_setup(
+  title: String,
+  term_title: String,
+  setup_renderer: fn(ffi.Renderer) -> Nil,
+  on_key: fn(String) -> Nil,
+  draw_body: fn(ffi.Buffer) -> Nil,
+) -> Nil {
+  let config =
+    renderer.RendererConfig(
+      width: term_w,
+      height: term_h,
+      screen_mode: renderer.AlternateScreen,
+      exit_on_ctrl_c: True,
+    )
+
+  let r = case renderer.create(config) {
+    Ok(r) -> r
+    Error(msg) -> {
+      runtime.log(msg)
+      panic as "Failed to create renderer"
+    }
+  }
+
+  renderer.setup(r, renderer.AlternateScreen)
+  renderer.set_title(r, term_title)
+  renderer.enable_mouse(r, False)
+  setup_renderer(r)
+
+  let r_int = ffi.renderer_to_int(r)
+  runtime.run_editor_loop(r_int, on_key, fn() {
+    render_static_frame(r, title, draw_body)
+  })
+
+  Nil
+}
+
+pub fn run_interactive_ui_demo(
+  title: String,
+  term_title: String,
+  on_key: fn(String) -> Nil,
+  view: fn() -> List(ui.Element),
+) -> Nil {
+  run_interactive_demo(title, term_title, on_key, fn(buf) {
+    render_static_frame_ui(buf, view())
+  })
+}
+
+pub fn run_interactive_ui_demo_with_setup(
+  title: String,
+  term_title: String,
+  setup_renderer: fn(ffi.Renderer) -> Nil,
+  on_key: fn(String) -> Nil,
+  view: fn() -> List(ui.Element),
+) -> Nil {
+  run_interactive_demo_with_setup(
+    title,
+    term_title,
+    setup_renderer,
+    on_key,
+    fn(buf) { render_static_frame_ui(buf, view()) },
+  )
+}
+
+pub fn run_event_demo_with_setup(
+  title: String,
+  term_title: String,
+  setup_renderer: fn(ffi.Renderer) -> Nil,
+  on_event: fn(ffi.Renderer, input.Event) -> Nil,
+  draw_body: fn(ffi.Renderer, ffi.Buffer) -> Nil,
+) -> Nil {
+  let config =
+    renderer.RendererConfig(
+      width: term_w,
+      height: term_h,
+      screen_mode: renderer.AlternateScreen,
+      exit_on_ctrl_c: True,
+    )
+
+  let r = case renderer.create(config) {
+    Ok(r) -> r
+    Error(msg) -> {
+      runtime.log(msg)
+      panic as "Failed to create renderer"
+    }
+  }
+
+  renderer.setup(r, renderer.AlternateScreen)
+  renderer.set_title(r, term_title)
+  setup_renderer(r)
+
+  input.run_event_loop(r, fn(event) { on_event(r, event) }, fn() {
+    render_static_frame(r, title, fn(buf) { draw_body(r, buf) })
+  })
+
+  Nil
+}
+
+pub fn run_event_ui_demo_with_setup(
+  title: String,
+  term_title: String,
+  setup_renderer: fn(ffi.Renderer) -> Nil,
+  on_event: fn(ffi.Renderer, input.Event) -> Nil,
+  before_render: fn(ffi.Renderer) -> Nil,
+  view: fn() -> List(ui.Element),
+) -> Nil {
+  run_event_demo_with_setup(
+    title,
+    term_title,
+    setup_renderer,
+    on_event,
+    fn(r, buf) {
+      before_render(r)
+      render_static_frame_ui(buf, view())
+    },
+  )
 }
 
 pub fn run_stub_demo(
