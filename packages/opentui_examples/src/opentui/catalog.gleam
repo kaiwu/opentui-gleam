@@ -6,26 +6,166 @@ pub type Demo {
 
 pub fn demos() -> List(Demo) {
   [
-    Demo(
-      id: "editor",
-      module: "opentui/examples/editor",
-      description: "Interactive text editor demo built entirely in Gleam.",
+    done(
+      "editor",
+      "opentui/examples/editor",
+      "Implemented port of upstream editor-demo.ts.",
     ),
-    Demo(
-      id: "terminal-title",
-      module: "opentui/examples/terminal_title",
-      description: "Terminal title demo ported from the TypeScript examples.",
+    done(
+      "terminal-title",
+      "opentui/examples/terminal_title",
+      "Implemented port of upstream terminal-title.ts.",
     ),
-    Demo(
-      id: "text-wrap",
-      module: "opentui/examples/text_wrap",
-      description: "Pure Gleam word and character wrapping helpers visualized in a TUI.",
+    done(
+      "text-wrap",
+      "opentui/examples/text_wrap",
+      "Implemented port of upstream text-wrap.ts.",
     ),
-    Demo(
-      id: "text-truncation",
-      module: "opentui/examples/text_truncation",
-      description: "Pure Gleam end and middle truncation helpers visualized in a TUI.",
+    done(
+      "text-truncation",
+      "opentui/examples/text_truncation",
+      "Implemented port of upstream text-truncation-demo.ts.",
     ),
+    stub(
+      "simple-layout-example",
+      "opentui/examples/simple_layout_example",
+      "Phase 1",
+    ),
+    stub(
+      "relative-positioning-demo",
+      "opentui/examples/relative_positioning_demo",
+      "Phase 1",
+    ),
+    stub("nested-zindex-demo", "opentui/examples/nested_zindex_demo", "Phase 1"),
+    stub("transparency-demo", "opentui/examples/transparency_demo", "Phase 1"),
+    stub("opacity-example", "opentui/examples/opacity_example", "Phase 1"),
+    stub(
+      "vnode-composition-demo",
+      "opentui/examples/vnode_composition_demo",
+      "Phase 1",
+    ),
+    stub("styled-text-demo", "opentui/examples/styled_text_demo", "Phase 1"),
+    stub("text-node-demo", "opentui/examples/text_node_demo", "Phase 1"),
+    stub("link-demo", "opentui/examples/link_demo", "Phase 1"),
+    stub("terminal", "opentui/examples/terminal", "Phase 1"),
+    stub("fonts", "opentui/examples/fonts", "Phase 1"),
+    stub(
+      "grayscale-buffer-demo",
+      "opentui/examples/grayscale_buffer_demo",
+      "Phase 1",
+    ),
+    stub("select-demo", "opentui/examples/select_demo", "Phase 2"),
+    stub("tab-select-demo", "opentui/examples/tab_select_demo", "Phase 2"),
+    stub("input-demo", "opentui/examples/input_demo", "Phase 2"),
+    stub("slider-demo", "opentui/examples/slider_demo", "Phase 2"),
+    stub("scroll-example", "opentui/examples/scroll_example", "Phase 2"),
+    stub(
+      "sticky-scroll-example",
+      "opentui/examples/sticky_scroll_example",
+      "Phase 2",
+    ),
+    stub(
+      "scrollbox-mouse-test",
+      "opentui/examples/scrollbox_mouse_test",
+      "Phase 2",
+    ),
+    stub(
+      "scrollbox-overlay-hit-test",
+      "opentui/examples/scrollbox_overlay_hit_test",
+      "Phase 2",
+    ),
+    stub(
+      "mouse-interaction-demo",
+      "opentui/examples/mouse_interaction_demo",
+      "Phase 2",
+    ),
+    stub("focus-restore-demo", "opentui/examples/focus_restore_demo", "Phase 2"),
+    stub(
+      "keypress-debug-demo",
+      "opentui/examples/keypress_debug_demo",
+      "Phase 2",
+    ),
+    stub("split-mode-demo", "opentui/examples/split_mode_demo", "Phase 2"),
+    stub(
+      "text-selection-demo",
+      "opentui/examples/text_selection_demo",
+      "Phase 3",
+    ),
+    stub(
+      "ascii-font-selection-demo",
+      "opentui/examples/ascii_font_selection_demo",
+      "Phase 3",
+    ),
+    stub("extmarks-demo", "opentui/examples/extmarks_demo", "Phase 3"),
+    stub("console-demo", "opentui/examples/console_demo", "Phase 3"),
+    stub(
+      "input-select-layout-demo",
+      "opentui/examples/input_select_layout_demo",
+      "Phase 3",
+    ),
+    stub("text-table-demo", "opentui/examples/text_table_demo", "Phase 3"),
+    stub(
+      "hast-syntax-highlighting-demo",
+      "opentui/examples/hast_syntax_highlighting_demo",
+      "Phase 3",
+    ),
+    stub("code-demo", "opentui/examples/code_demo", "Phase 3"),
+    stub("diff-demo", "opentui/examples/diff_demo", "Phase 3"),
+    stub("markdown-demo", "opentui/examples/markdown_demo", "Phase 3"),
+    stub("live-state-demo", "opentui/examples/live_state_demo", "Phase 3"),
+    stub(
+      "core-plugin-slots-demo",
+      "opentui/examples/core_plugin_slots_demo",
+      "Phase 3",
+    ),
+    stub("framebuffer-demo", "opentui/examples/framebuffer_demo", "Phase 4"),
+    stub("full-unicode-demo", "opentui/examples/full_unicode_demo", "Phase 4"),
+    stub(
+      "wide-grapheme-overlay-demo",
+      "opentui/examples/wide_grapheme_overlay_demo",
+      "Phase 4",
+    ),
+    stub("timeline-example", "opentui/examples/timeline_example", "Phase 4"),
+    stub("static-sprite-demo", "opentui/examples/static_sprite_demo", "Phase 4"),
+    stub(
+      "texture-loading-demo",
+      "opentui/examples/texture_loading_demo",
+      "Phase 4",
+    ),
+    stub(
+      "sprite-animation-demo",
+      "opentui/examples/sprite_animation_demo",
+      "Phase 4",
+    ),
+    stub(
+      "sprite-particle-generator-demo",
+      "opentui/examples/sprite_particle_generator_demo",
+      "Phase 4",
+    ),
+    stub("shader-cube-demo", "opentui/examples/shader_cube_demo", "Phase 5"),
+    stub(
+      "fractal-shader-demo",
+      "opentui/examples/fractal_shader_demo",
+      "Phase 5",
+    ),
+    stub("lights-phong-demo", "opentui/examples/lights_phong_demo", "Phase 5"),
+    stub(
+      "draggable-three-demo",
+      "opentui/examples/draggable_three_demo",
+      "Phase 5",
+    ),
+    stub(
+      "physx-planck-2d-demo",
+      "opentui/examples/physx_planck_2d_demo",
+      "Phase 5",
+    ),
+    stub(
+      "physx-rapier-2d-demo",
+      "opentui/examples/physx_rapier_2d_demo",
+      "Phase 5",
+    ),
+    stub("golden-star-demo", "opentui/examples/golden_star_demo", "Phase 5"),
+    stub("opentui-demo", "opentui/examples/opentui_demo", "Phase 5"),
   ]
 }
 
@@ -34,12 +174,18 @@ pub fn print_demo_catalog() -> Nil {
 }
 
 pub fn help_text() -> String {
-  "OpenTUI Gleam bindings\n\n"
-  <> "This package exposes a growing Gleam-first demo ecosystem.\n"
-  <> "Run demos directly with `gleam run -m <module>`.\n\n"
-  <> "Available demos:\n"
+  "OpenTUI Gleam examples\n\n"
+  <> "Run demos directly with `gleam run -m <module>` or from project root with `./scripts/run-example.sh <id>`.\n\n"
+  <> "Catalog:\n"
   <> format_demos(demos())
-  <> "\nPlace new demos under `src/opentui/examples/` and compose them from reusable `opentui/*` bindings."
+}
+
+fn done(id: String, module: String, description: String) -> Demo {
+  Demo(id, module, "[done] " <> description)
+}
+
+fn stub(id: String, module: String, phase: String) -> Demo {
+  Demo(id, module, "[stub] planned in " <> phase)
 }
 
 fn format_demos(demos: List(Demo)) -> String {
@@ -48,21 +194,17 @@ fn format_demos(demos: List(Demo)) -> String {
     [Demo(id:, module:, description:)] ->
       "  - "
       <> id
-      <> "\n"
-      <> "    module: "
+      <> "\n    module: "
       <> module
-      <> "\n"
-      <> "    "
+      <> "\n    "
       <> description
       <> "\n"
     [Demo(id:, module:, description:), ..rest] ->
       "  - "
       <> id
-      <> "\n"
-      <> "    module: "
+      <> "\n    module: "
       <> module
-      <> "\n"
-      <> "    "
+      <> "\n    "
       <> description
       <> "\n"
       <> format_demos(rest)

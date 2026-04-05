@@ -31,3 +31,13 @@ pub fn catalog_lists_new_demo_modules_test() {
   |> string.contains("opentui/examples/text_truncation")
   |> should.equal(True)
 }
+
+pub fn catalog_lists_stub_demo_modules_test() {
+  let help = catalog.help_text()
+  help
+  |> string.contains("opentui/examples/select_demo")
+  |> should.equal(True)
+  help
+  |> string.contains("[stub] planned in Phase 2")
+  |> should.equal(True)
+}

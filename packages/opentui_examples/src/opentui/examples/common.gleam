@@ -2,6 +2,7 @@ import opentui/buffer
 import opentui/ffi
 import opentui/renderer
 import opentui/runtime
+import opentui/text
 import opentui/ui
 
 pub const term_w = 80
@@ -61,6 +62,15 @@ pub fn run_static_ui_demo(
   })
 }
 
+pub fn run_stub_demo(
+  title: String,
+  term_title: String,
+  phase: String,
+  needs: List(String),
+) -> Nil {
+  run_static_ui_demo(title, term_title, stub_view(title, phase, needs))
+}
+
 pub fn draw_panel(
   buf: ffi.Buffer,
   x: Int,
@@ -115,6 +125,62 @@ fn render_static_frame(
 
 fn render_static_frame_ui(buf: ffi.Buffer, elements: List(ui.Element)) -> Nil {
   ui.render_all(buf, elements)
+}
+
+fn stub_view(
+  title: String,
+  phase: String,
+  needs: List(String),
+) -> List(ui.Element) {
+  [
+    ui.Box(
+      [
+        ui.X(2),
+        ui.Y(3),
+        ui.Width(76),
+        ui.Height(18),
+        ui.Padding(1),
+        ui.Background(color(panel_bg)),
+        ui.Border(title, color(border_fg)),
+      ],
+      [
+        ui.Column([ui.Gap(1)], [
+          text_line("Status: planned stub"),
+          text_line("Phase: " <> phase),
+          ui.Spacer(1),
+          text_line(
+            "This demo exists as a runnable placeholder so we can implement demos one by one while growing the right lower-level packages.",
+          ),
+          ui.Spacer(1),
+          text_line("Likely needs:"),
+          ui.Column([ui.Gap(0)], need_lines(needs)),
+        ]),
+      ],
+    ),
+  ]
+}
+
+fn need_lines(needs: List(String)) -> List(ui.Element) {
+  case needs {
+    [] -> [text_line("- no dependencies listed yet")]
+    [need, ..rest] -> [text_line("- " <> need), ..need_lines(rest)]
+  }
+}
+
+fn text_line(content: String) -> ui.Element {
+  ui.Paragraph(
+    [
+      ui.Foreground(color(fg_color)),
+      ui.Background(color(panel_bg)),
+      ui.Wrap(text.WordWrap),
+      ui.Truncate(ui.EndTruncate),
+    ],
+    content,
+  )
+}
+
+fn color(c: #(Float, Float, Float, Float)) -> ui.Color {
+  ui.Color(c.0, c.1, c.2, c.3)
 }
 
 fn each_index(n: Int, f: fn(Int) -> Nil) -> Nil {
