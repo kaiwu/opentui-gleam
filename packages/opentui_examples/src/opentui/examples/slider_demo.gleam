@@ -45,7 +45,7 @@ fn view(value: state.IntCell) -> List(ui.Element) {
         common.line("Home -> 0, End -> 100"),
         ui.Spacer(1),
         common.paragraph(
-          "Mouse dragging is still blocked by missing event parsing in the runtime, but the common slider value semantics are now implemented and tested.",
+          "The slider's value semantics now live in shared runtime-friendly reducers. Keyboard control is implemented here today, and the new runtime input path is ready for future mouse dragging support.",
         ),
       ]),
     ]),

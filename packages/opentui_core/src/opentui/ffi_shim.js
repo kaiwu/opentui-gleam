@@ -467,16 +467,33 @@ export function editBufferGetCursor(buffer) {
 }
 
 export function editBufferGetTextAsString(buffer) {
-  const outBuf = Buffer.alloc(4096)
-  const rawLen = raw.editBufferGetText(buffer, outBuf, 4096)
+  let capacity = 4096
+
+  while (capacity <= 65536) {
+    const outBuf = Buffer.alloc(capacity)
+    const rawLen = raw.editBufferGetText(buffer, outBuf, capacity)
+    const len = Number(rawLen)
+
+    if (!Number.isFinite(len) || len <= 0) {
+      return ""
+    }
+
+    if (len < capacity) {
+      return outBuf.subarray(0, Math.floor(len)).toString("utf-8")
+    }
+
+    capacity *= 2
+  }
+
+  const outBuf = Buffer.alloc(65536)
+  const rawLen = raw.editBufferGetText(buffer, outBuf, 65536)
   const len = Number(rawLen)
 
   if (!Number.isFinite(len) || len <= 0) {
     return ""
   }
 
-  const boundedLen = Math.min(outBuf.length, Math.floor(len))
-  return outBuf.subarray(0, boundedLen).toString("utf-8")
+  return outBuf.subarray(0, Math.min(outBuf.length, Math.floor(len))).toString("utf-8")
 }
 
 export function syntaxStyleRegister(style, name, nameLen, fg, bg, attributes) {

@@ -297,7 +297,7 @@ pub fn edit_buffer_new_line(buffer: Int) -> Nil
 pub fn edit_buffer_get_cursor(buffer: Int) -> #(Int, Int)
 
 @external(javascript, "./ffi_shim.js", "createEditorView")
-pub fn create_editor_view(buffer: Int) -> Int
+pub fn create_editor_view(buffer: Int, width: Int, height: Int) -> Int
 
 @external(javascript, "./ffi_shim.js", "destroyEditorView")
 pub fn destroy_editor_view(view: Int) -> Nil

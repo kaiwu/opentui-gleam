@@ -41,7 +41,7 @@ fn view(log: ffi.EditBuffer) -> List(ui.Element) {
         common.line("q still quits loop"),
         ui.Spacer(1),
         common.paragraph(
-          "This freezes the current keyboard contract before richer event ADTs land in opentui_runtime.",
+          "This keeps the raw keyboard stream visible even now that typed runtime input events exist, which makes it useful for verifying terminal sequences and future parser changes.",
         ),
       ]),
     ]),

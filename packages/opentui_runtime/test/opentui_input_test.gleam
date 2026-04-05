@@ -54,6 +54,31 @@ pub fn parse_event_decodes_wheel_and_modifiers_test() {
   }
 }
 
+pub fn parse_event_decodes_drag_and_release_test() {
+  let drag = input.parse_event("\u{1b}[<32;9;3M")
+  let release = input.parse_event("\u{1b}[<0;9;3m")
+
+  let _ = case drag {
+    input.MouseEvent(input.MouseData(action:, button:, x:, y:, ..)) -> {
+      let _ = action |> should.equal(input.MouseDrag)
+      let _ = button |> should.equal(input.LeftButton)
+      let _ = x |> should.equal(8)
+      y |> should.equal(2)
+    }
+    _ -> panic as "expected parsed drag event"
+  }
+
+  case release {
+    input.MouseEvent(input.MouseData(action:, button:, x:, y:, ..)) -> {
+      let _ = action |> should.equal(input.MouseRelease)
+      let _ = button |> should.equal(input.LeftButton)
+      let _ = x |> should.equal(8)
+      y |> should.equal(2)
+    }
+    _ -> panic as "expected parsed release event"
+  }
+}
+
 pub fn parse_event_keeps_unknown_sequences_test() {
   input.parse_event("\u{1b}[200~")
   |> should.equal(input.KeyEvent("\u{1b}[200~", input.UnknownKey("\u{1b}[200~")))

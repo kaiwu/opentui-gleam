@@ -17,6 +17,14 @@ pub fn text(buffer: ffi.EditBuffer) -> String {
   ffi.edit_buffer_get_text_as_string(ffi.edit_buffer_to_int(buffer))
 }
 
+pub fn insert_text(buffer: ffi.EditBuffer, text: String) -> Nil {
+  ffi.edit_buffer_insert_text(
+    ffi.edit_buffer_to_int(buffer),
+    text,
+    string.byte_size(text),
+  )
+}
+
 pub fn insert_char(buffer: ffi.EditBuffer, text: String) -> Nil {
   ffi.edit_buffer_insert_char(
     ffi.edit_buffer_to_int(buffer),
@@ -27,6 +35,28 @@ pub fn insert_char(buffer: ffi.EditBuffer, text: String) -> Nil {
 
 pub fn delete_backward(buffer: ffi.EditBuffer) -> Nil {
   ffi.edit_buffer_delete_char_backward(ffi.edit_buffer_to_int(buffer))
+}
+
+pub fn delete_forward(buffer: ffi.EditBuffer) -> Nil {
+  ffi.edit_buffer_delete_char(ffi.edit_buffer_to_int(buffer))
+}
+
+pub fn undo(buffer: ffi.EditBuffer) -> Nil {
+  let _ = ffi.edit_buffer_undo(ffi.edit_buffer_to_int(buffer), "", 0)
+  Nil
+}
+
+pub fn redo(buffer: ffi.EditBuffer) -> Nil {
+  let _ = ffi.edit_buffer_redo(ffi.edit_buffer_to_int(buffer), "", 0)
+  Nil
+}
+
+pub fn can_undo(buffer: ffi.EditBuffer) -> Bool {
+  ffi.edit_buffer_can_undo(ffi.edit_buffer_to_int(buffer))
+}
+
+pub fn can_redo(buffer: ffi.EditBuffer) -> Bool {
+  ffi.edit_buffer_can_redo(ffi.edit_buffer_to_int(buffer))
 }
 
 pub fn move_left(buffer: ffi.EditBuffer) -> Nil {
