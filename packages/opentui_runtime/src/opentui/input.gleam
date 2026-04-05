@@ -3,6 +3,21 @@ import gleam/string
 import opentui/ffi
 import opentui/runtime
 
+pub type Parser
+
+@external(javascript, "./input_parser.js", "createParser")
+pub fn create_parser() -> Parser
+
+@external(javascript, "./input_parser.js", "consumeChunk")
+fn consume_chunk(
+  parser: Parser,
+  chunk: String,
+  on_token: fn(String) -> Nil,
+) -> Nil
+
+@external(javascript, "./input_parser.js", "pushChunkJoined")
+pub fn push_chunk(parser: Parser, chunk: String) -> String
+
 pub type Event {
   KeyEvent(raw: String, key: Key)
   MouseEvent(MouseData)
@@ -59,9 +74,13 @@ pub fn run_event_loop(
   on_event: fn(Event) -> Nil,
   draw_fn: fn() -> Nil,
 ) -> Nil {
-  runtime.run_event_loop(
+  let parser = create_parser()
+
+  runtime.run_raw_input_loop(
     ffi.renderer_to_int(renderer),
-    fn(raw) { on_event(parse_event(raw)) },
+    fn(chunk) {
+      consume_chunk(parser, chunk, fn(raw) { on_event(parse_event(raw)) })
+    },
     draw_fn,
   )
 }

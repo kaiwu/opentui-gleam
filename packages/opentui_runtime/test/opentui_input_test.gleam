@@ -83,3 +83,11 @@ pub fn parse_event_keeps_unknown_sequences_test() {
   input.parse_event("\u{1b}[200~")
   |> should.equal(input.KeyEvent("\u{1b}[200~", input.UnknownKey("\u{1b}[200~")))
 }
+
+pub fn parser_preserves_split_mouse_sequences_test() {
+  let parser = input.create_parser()
+  let _ = input.push_chunk(parser, "\u{1b}[<0;12") |> should.equal("")
+
+  input.push_chunk(parser, ";8M")
+  |> should.equal("\u{1b}[<0;12;8M")
+}

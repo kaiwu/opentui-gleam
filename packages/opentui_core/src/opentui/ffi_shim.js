@@ -731,6 +731,10 @@ function scheduleStartupRerenders(rendererPtr, drawFn) {
   }
 }
 
+function chunkRequestsExit(chunk) {
+  return chunk.length === 1 && (chunk[0] === 0x03 || chunk[0] === 0x71)
+}
+
 // Run the demo loop: draws the frame, then listens for keys.
 // On each keypress, calls drawFn() and re-renders.
 // Quits when 'q' is pressed.
@@ -811,6 +815,29 @@ export function runEventLoop(renderer, onEvent, drawFn) {
       }
       onEvent(token)
     })
+    drawFn()
+    raw.render(r, true)
+  })
+}
+
+export function runRawInputLoop(renderer, onChunk, drawFn) {
+  const r = Number(renderer)
+  const cancelStartupRerenders = scheduleStartupRerenders(r, drawFn)
+
+  drawFn()
+  raw.render(r, true)
+
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true)
+  }
+  process.stdin.resume()
+
+  process.stdin.on("data", (chunk) => {
+    if (chunkRequestsExit(chunk)) {
+      cancelStartupRerenders()
+      cleanupAndExit(r)
+    }
+    onChunk(Buffer.from(chunk).toString("utf-8"))
     drawFn()
     raw.render(r, true)
   })

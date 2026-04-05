@@ -119,10 +119,17 @@ pub fn run_interactive_demo_with_setup(
   renderer.enable_mouse(r, False)
   setup_renderer(r)
 
-  let r_int = ffi.renderer_to_int(r)
-  runtime.run_editor_loop(r_int, on_key, fn() {
-    render_static_frame(r, title, draw_body)
-  })
+  input.run_event_loop(
+    r,
+    fn(event) {
+      case event {
+        input.KeyEvent(raw, _) -> on_key(raw)
+        input.UnknownEvent(raw) -> on_key(raw)
+        input.MouseEvent(_) -> Nil
+      }
+    },
+    fn() { render_static_frame(r, title, draw_body) },
+  )
 
   Nil
 }

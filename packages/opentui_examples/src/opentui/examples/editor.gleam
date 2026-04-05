@@ -4,6 +4,7 @@ import gleam/string
 import opentui/buffer
 import opentui/edit_buffer
 import opentui/ffi
+import opentui/input
 import opentui/renderer
 import opentui/runtime
 
@@ -60,10 +61,17 @@ pub fn main() -> Nil {
   let eb = edit_buffer.create(0)
   edit_buffer.set_text(eb, initial_text)
 
-  let r_int = ffi.renderer_to_int(r)
-  runtime.run_editor_loop(r_int, fn(key) { handle_key(eb, key) }, fn() {
-    render_frame(r, eb)
-  })
+  input.run_event_loop(
+    r,
+    fn(event) {
+      case event {
+        input.KeyEvent(raw, _) -> handle_key(eb, raw)
+        input.UnknownEvent(raw) -> handle_key(eb, raw)
+        input.MouseEvent(_) -> Nil
+      }
+    },
+    fn() { render_frame(r, eb) },
+  )
 
   Nil
 }
