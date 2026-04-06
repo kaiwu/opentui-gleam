@@ -296,6 +296,9 @@ pub fn edit_buffer_new_line(buffer: Int) -> Nil
 @external(javascript, "./ffi_shim.js", "editBufferGetCursor")
 pub fn edit_buffer_get_cursor(buffer: Int) -> #(Int, Int)
 
+@external(javascript, "./ffi_shim.js", "textBufferGetPlainTextAsString")
+pub fn text_buffer_get_plain_text_as_string(buffer: Int) -> String
+
 @external(javascript, "./ffi_shim.js", "createEditorView")
 pub fn create_editor_view(buffer: Int, width: Int, height: Int) -> Int
 

@@ -496,6 +496,36 @@ export function editBufferGetTextAsString(buffer) {
   return outBuf.subarray(0, Math.min(outBuf.length, Math.floor(len))).toString("utf-8")
 }
 
+export function textBufferGetPlainTextAsString(buffer) {
+  let capacity = 4096
+
+  while (capacity <= 65536) {
+    const outBuf = Buffer.alloc(capacity)
+    const rawLen = raw.textBufferGetPlainText(buffer, outBuf, capacity)
+    const len = Number(rawLen)
+
+    if (!Number.isFinite(len) || len <= 0) {
+      return ""
+    }
+
+    if (len < capacity) {
+      return outBuf.subarray(0, Math.floor(len)).toString("utf-8")
+    }
+
+    capacity *= 2
+  }
+
+  const outBuf = Buffer.alloc(65536)
+  const rawLen = raw.textBufferGetPlainText(buffer, outBuf, 65536)
+  const len = Number(rawLen)
+
+  if (!Number.isFinite(len) || len <= 0) {
+    return ""
+  }
+
+  return outBuf.subarray(0, Math.min(outBuf.length, Math.floor(len))).toString("utf-8")
+}
+
 export function syntaxStyleRegister(style, name, nameLen, fg, bg, attributes) {
   return raw.syntaxStyleRegister(style, toBuf(name), nameLen, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
 }

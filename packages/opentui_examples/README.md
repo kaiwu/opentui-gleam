@@ -83,9 +83,9 @@ Primary pressure on the stack:
 - [x] `slider-demo`
 - [x] `scroll-example`
 - [x] `sticky-scroll-example`
-- [ ] `scrollbox-mouse-test`
-- [ ] `scrollbox-overlay-hit-test`
-- [ ] `mouse-interaction-demo`
+- [x] `scrollbox-mouse-test`
+- [x] `scrollbox-overlay-hit-test`
+- [x] `mouse-interaction-demo`
 - [x] `focus-restore-demo`
 - [x] `keypress-debug-demo`
 - [x] `split-mode-demo`
