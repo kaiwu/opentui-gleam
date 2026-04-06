@@ -146,37 +146,65 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/split_mode_demo",
       "Implemented keyboard-controlled split pane layout and focus switching.",
     ),
-    stub(
+    done(
       "text-selection-demo",
       "opentui/examples/text_selection_demo",
-      "Phase 3",
+      "Implemented selection model as pure data with visual character highlighting.",
     ),
-    stub(
+    done(
       "ascii-font-selection-demo",
       "opentui/examples/ascii_font_selection_demo",
-      "Phase 3",
+      "Implemented ASCII block-font banner rendering via pure glyph transformation.",
     ),
-    stub("extmarks-demo", "opentui/examples/extmarks_demo", "Phase 3"),
-    stub("console-demo", "opentui/examples/console_demo", "Phase 3"),
-    stub(
+    done(
+      "extmarks-demo",
+      "opentui/examples/extmarks_demo",
+      "Implemented virtual extmark ranges with atomic cursor skip logic.",
+    ),
+    done(
+      "console-demo",
+      "opentui/examples/console_demo",
+      "Implemented log buffer with mouse-clickable level buttons and bounded FIFO.",
+    ),
+    done(
       "input-select-layout-demo",
       "opentui/examples/input_select_layout_demo",
-      "Phase 3",
+      "Implemented form composition with edit_buffer input and select widget under shared focus.",
     ),
-    stub("text-table-demo", "opentui/examples/text_table_demo", "Phase 3"),
-    stub(
+    done(
+      "text-table-demo",
+      "opentui/examples/text_table_demo",
+      "Implemented pure table formatting with configurable column alignment.",
+    ),
+    done(
       "hast-syntax-highlighting-demo",
       "opentui/examples/hast_syntax_highlighting_demo",
-      "Phase 3",
+      "Implemented keyword-based tokenizer driving per-token syntax coloring.",
     ),
-    stub("code-demo", "opentui/examples/code_demo", "Phase 3"),
-    stub("diff-demo", "opentui/examples/diff_demo", "Phase 3"),
-    stub("markdown-demo", "opentui/examples/markdown_demo", "Phase 3"),
-    stub("live-state-demo", "opentui/examples/live_state_demo", "Phase 3"),
-    stub(
+    done(
+      "code-demo",
+      "opentui/examples/code_demo",
+      "Implemented code viewer with line numbers, tokenizer, and three switchable themes.",
+    ),
+    done(
+      "diff-demo",
+      "opentui/examples/diff_demo",
+      "Implemented unified diff viewer with pure line classifier and colored output.",
+    ),
+    done(
+      "markdown-demo",
+      "opentui/examples/markdown_demo",
+      "Implemented markdown block parser rendering headings, code, lists, and rules as element trees.",
+    ),
+    done(
+      "live-state-demo",
+      "opentui/examples/live_state_demo",
+      "Implemented four independent state cells composing into a unified reactive view.",
+    ),
+    done(
       "core-plugin-slots-demo",
       "opentui/examples/core_plugin_slots_demo",
-      "Phase 3",
+      "Implemented higher-order slot composition with toggleable named render slots.",
     ),
     stub("framebuffer-demo", "opentui/examples/framebuffer_demo", "Phase 4"),
     stub("full-unicode-demo", "opentui/examples/full_unicode_demo", "Phase 4"),

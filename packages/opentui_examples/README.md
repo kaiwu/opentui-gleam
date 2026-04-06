@@ -100,18 +100,18 @@ Primary pressure on the stack:
 ## Phase 3 — editor/text tooling/rich runtime features
 
 - [x] `editor` ← upstream `editor-demo.ts`
-- [ ] `text-selection-demo`
-- [ ] `ascii-font-selection-demo`
-- [ ] `extmarks-demo`
-- [ ] `console-demo`
-- [ ] `input-select-layout-demo`
-- [ ] `text-table-demo`
-- [ ] `hast-syntax-highlighting-demo`
-- [ ] `code-demo`
-- [ ] `diff-demo`
-- [ ] `markdown-demo`
-- [ ] `live-state-demo`
-- [ ] `core-plugin-slots-demo`
+- [x] `text-selection-demo`
+- [x] `ascii-font-selection-demo`
+- [x] `extmarks-demo`
+- [x] `console-demo`
+- [x] `input-select-layout-demo`
+- [x] `text-table-demo`
+- [x] `hast-syntax-highlighting-demo`
+- [x] `code-demo`
+- [x] `diff-demo`
+- [x] `markdown-demo`
+- [x] `live-state-demo`
+- [x] `core-plugin-slots-demo`
 
 Primary pressure on the stack:
 

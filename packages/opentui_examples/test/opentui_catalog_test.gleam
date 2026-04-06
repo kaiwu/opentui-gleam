@@ -32,13 +32,20 @@ pub fn catalog_lists_new_demo_modules_test() {
   |> should.equal(True)
 }
 
-pub fn catalog_lists_stub_demo_modules_test() {
+pub fn catalog_marks_phase_3_demos_done_test() {
   let help = catalog.help_text()
   help
   |> string.contains("opentui/examples/text_selection_demo")
   |> should.equal(True)
   help
   |> string.contains("[stub] planned in Phase 3")
+  |> should.equal(False)
+}
+
+pub fn catalog_lists_stub_demo_modules_test() {
+  let help = catalog.help_text()
+  help
+  |> string.contains("[stub] planned in Phase 4")
   |> should.equal(True)
 }
 
