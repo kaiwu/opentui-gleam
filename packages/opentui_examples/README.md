@@ -165,3 +165,30 @@ Every upstream demo should exist in Gleam as either:
 - a runnable stub explaining the current phase and missing prerequisites
 
 That keeps the roadmap executable and prevents demos from being forgotten.
+
+## Upstream parity gap todo report
+
+These todos track demos that already exist in Gleam but still have meaningful
+gaps against the upstream TypeScript demos. The standard here is not exact
+parity. Minor differences are acceptable as long as the Gleam demo still gets
+the point.
+
+- [x] `text-selection-demo`: mouse-driven cross-panel selection, nested-element
+  semantics, and richer status reporting now preserve the upstream demo's core
+  point. Renderer-level selection events remain a non-blocking implementation
+  difference.
+- [x] `editor`: now uses an `editor_view`-backed surface with wrap and line-
+  number toggles plus richer status reporting, which preserves the upstream
+  demo's main teaching value. Diff and diagnostics panes remain deferred.
+- [x] `sprite-animation-demo`: now presents explicit sprite-sheet animation
+  semantics with pause/step/speed/reset controls, visible frame-strip status,
+  and a state-driven active sprite, which preserves the upstream demo's core
+  teaching value without the 3D-specific showcase extras.
+- [ ] `sprite-particle-generator-demo`: strengthen the particle-system demo so
+  it demonstrates the upstream idea more clearly, even if it stays simpler.
+- [ ] `physx-planck-2d-demo`: make the physics simulation read more like a real
+  showcase demo instead of a thin moving-body sketch.
+- [ ] `physx-rapier-2d-demo`: preserve a clearly distinct second physics preset
+  with stronger demo value, not just a minor variation.
+- [ ] `draggable-three-demo`: make mouse dragging the primary interaction so it
+  better matches the upstream demo's core purpose.

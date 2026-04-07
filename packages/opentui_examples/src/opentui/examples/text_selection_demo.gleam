@@ -1,152 +1,487 @@
 import gleam/int
 import gleam/list
 import gleam/string
+import opentui/buffer
 import opentui/examples/common
-import opentui/examples/phase2_model
 import opentui/examples/phase2_state as state
 import opentui/examples/phase3_model as model
-import opentui/ui
+import opentui/examples/text_selection_semantics as semantics
+import opentui/ffi
+import opentui/input
+import opentui/renderer
 
-const sample_text = "The quick brown fox jumps over the lazy dog. Gleam makes TUI composition safe."
-
-pub fn main() -> Nil {
-  let cursor = state.create_int(0)
-  let anchor = state.create_int(0)
-
-  common.run_interactive_ui_demo(
-    "Text Selection Demo",
-    "Text Selection Demo",
-    fn(key) { handle_key(cursor, anchor, key) },
-    fn() { view(cursor, anchor) },
+type VisualLeaf {
+  VisualLeaf(
+    x: Int,
+    y: Int,
+    fg: #(Float, Float, Float, Float),
+    leaf: semantics.TextLeaf,
   )
 }
 
-fn handle_key(cursor: state.IntCell, anchor: state.IntCell, raw: String) -> Nil {
-  let key = phase2_model.parse_key(raw)
-  let pos = state.get_int(cursor)
-  let anch = state.get_int(anchor)
-  let len = string.length(sample_text)
-  let sel = model.Selection(anch, pos)
+type LocatedLeaf {
+  LocatedLeaf(visual: VisualLeaf, start: Int)
+}
 
-  case key {
-    phase2_model.ArrowRight -> {
-      let next = phase2_model.clamp(pos + 1, 0, len)
-      state.set_int(cursor, next)
-      state.set_int(anchor, next)
-    }
-    phase2_model.ArrowLeft -> {
-      let next = phase2_model.clamp(pos - 1, 0, len)
-      state.set_int(cursor, next)
-      state.set_int(anchor, next)
-    }
-    phase2_model.Home -> {
-      state.set_int(cursor, 0)
-      state.set_int(anchor, 0)
-    }
-    phase2_model.End -> {
-      state.set_int(cursor, len)
-      state.set_int(anchor, len)
-    }
-    phase2_model.Character("L") -> {
-      let extended = model.extend_selection(sel, 1)
-      state.set_int(cursor, phase2_model.clamp(extended.focus, 0, len))
-    }
-    phase2_model.Character("H") -> {
-      let extended = model.extend_selection(sel, -1)
-      state.set_int(cursor, phase2_model.clamp(extended.focus, 0, len))
-    }
-    phase2_model.Character("c") -> {
-      let collapsed = model.collapse_selection(sel)
-      state.set_int(cursor, collapsed.focus)
-      state.set_int(anchor, collapsed.anchor)
-    }
+pub fn main() -> Nil {
+  let anchor = state.create_int(0)
+  let focus = state.create_int(0)
+  let dragging = state.create_bool(False)
+  let has_selection = state.create_bool(False)
+
+  common.run_event_demo_with_setup(
+    "Text Selection Demo",
+    "Text Selection Demo",
+    fn(r) { renderer.enable_mouse(r, True) },
+    fn(_renderer, event) {
+      handle_event(anchor, focus, dragging, has_selection, event)
+    },
+    fn(_renderer, buf) { draw(buf, anchor, focus, dragging, has_selection) },
+  )
+}
+
+fn handle_event(
+  anchor: state.IntCell,
+  focus: state.IntCell,
+  dragging: state.BoolCell,
+  has_selection: state.BoolCell,
+  event: input.Event,
+) -> Nil {
+  let located = located_leaves()
+
+  case event {
+    input.KeyEvent(_, key) ->
+      case key {
+        input.Character("c") | input.Character("C") -> {
+          state.set_int(anchor, 0)
+          state.set_int(focus, 0)
+          state.set_bool(dragging, False)
+          state.set_bool(has_selection, False)
+        }
+        _ -> Nil
+      }
+    input.MouseEvent(input.MouseData(action:, button:, x:, y:, ..)) ->
+      case action, button {
+        input.MousePress, input.LeftButton ->
+          case position_to_index(located, x, y) {
+            Ok(index) -> {
+              state.set_int(anchor, index)
+              state.set_int(focus, index)
+              state.set_bool(dragging, True)
+              state.set_bool(has_selection, True)
+            }
+            Error(_) -> {
+              state.set_bool(dragging, False)
+              state.set_bool(has_selection, False)
+            }
+          }
+        input.MouseDrag, _ ->
+          case state.get_bool(dragging), position_to_index(located, x, y) {
+            True, Ok(index) -> state.set_int(focus, index)
+            _, _ -> Nil
+          }
+        input.MouseRelease, _ -> state.set_bool(dragging, False)
+        _, _ -> Nil
+      }
     _ -> Nil
   }
 }
 
-fn view(cursor: state.IntCell, anchor: state.IntCell) -> List(ui.Element) {
-  let pos = state.get_int(cursor)
-  let anch = state.get_int(anchor)
-  let sel = model.Selection(anch, pos)
-  let chars = string.to_graphemes(sample_text)
+fn draw(
+  buf: ffi.Buffer,
+  anchor: state.IntCell,
+  focus: state.IntCell,
+  dragging: state.BoolCell,
+  has_selection: state.BoolCell,
+) -> Nil {
+  let visuals = visual_leaves()
+  let located = located_leaves()
+  let selection = model.Selection(state.get_int(anchor), state.get_int(focus))
+  let report =
+    semantics.build_report(
+      list.map(visuals, fn(visual) { visual.leaf }),
+      state.get_bool(has_selection),
+      selection,
+    )
 
-  [
-    common.panel("Text", 2, 3, 76, 8, [
-      ui.Column([ui.Gap(1)], [
-        common.line(render_with_selection(chars, sel, 0, 36)),
-        common.line(render_with_selection(chars, sel, 36, string.length(sample_text) - 36)),
-      ]),
-    ]),
-    common.panel("Selection state", 2, 12, 38, 9, [
-      ui.Column([ui.Gap(1)], [
-        common.line("Anchor: " <> int.to_string(anch)),
-        common.line("Focus:  " <> int.to_string(pos)),
-        common.line("Length: " <> int.to_string(model.selection_length(sel))),
-        common.line("Range:  " <> range_label(sel)),
-        common.line(
-          "Selected: "
-          <> selected_text(chars, sel),
-        ),
-      ]),
-    ]),
-    common.panel("Controls", 42, 12, 36, 9, [
-      ui.Column([ui.Gap(1)], [
-        common.line("←/→     move cursor"),
-        common.line("Shift+L  extend right"),
-        common.line("Shift+H  extend left"),
-        common.line("c        collapse"),
-        common.line("Home/End jump"),
-      ]),
-    ]),
-  ]
+  common.draw_panel(buf, 2, 2, 38, 10, "Document Section 1")
+  common.draw_panel(buf, 42, 2, 36, 10, "Code Example")
+  common.draw_panel(buf, 6, 8, 28, 3, "Nested Box")
+  common.draw_panel(buf, 18, 12, 44, 5, "README")
+  common.draw_panel(buf, 2, 17, 76, 6, "Selection Status")
+
+  draw_visuals(buf, located, selection)
+
+  buffer.draw_text(
+    buf,
+    "Click and drag to select across elements. Press c to clear selection.",
+    4,
+    19,
+    common.fg_color,
+    common.panel_bg,
+    0,
+  )
+  buffer.draw_text(
+    buf,
+    status_title(report),
+    4,
+    20,
+    common.accent_blue,
+    common.panel_bg,
+    0,
+  )
+  buffer.draw_text(
+    buf,
+    status_excerpt(report),
+    4,
+    21,
+    common.muted_fg,
+    common.panel_bg,
+    0,
+  )
+  buffer.draw_text(
+    buf,
+    debug_line(report, state.get_bool(dragging)),
+    4,
+    22,
+    common.fg_color,
+    common.panel_bg,
+    0,
+  )
 }
 
-fn render_with_selection(
+fn draw_visuals(
+  buf: ffi.Buffer,
+  located: List(LocatedLeaf),
+  selection: model.Selection,
+) -> Nil {
+  case located {
+    [] -> Nil
+    [LocatedLeaf(visual:, start:), ..rest] -> {
+      draw_visual(buf, visual, start, selection)
+      draw_visuals(buf, rest, selection)
+    }
+  }
+}
+
+fn draw_visual(
+  buf: ffi.Buffer,
+  visual: VisualLeaf,
+  start: Int,
+  selection: model.Selection,
+) -> Nil {
+  draw_chars(
+    buf,
+    string.to_graphemes(visual.leaf.text),
+    visual.x,
+    visual.y,
+    start,
+    visual.fg,
+    selection,
+  )
+}
+
+fn draw_chars(
+  buf: ffi.Buffer,
   chars: List(String),
-  sel: model.Selection,
-  offset: Int,
-  count: Int,
-) -> String {
-  case count <= 0 || offset >= list.length(chars) {
-    True -> ""
-    False -> {
-      let char = nth_char(chars, offset)
-      let display = case model.selection_contains(sel, offset) {
-        True -> "[" <> char <> "]"
+  x: Int,
+  y: Int,
+  index: Int,
+  fg: #(Float, Float, Float, Float),
+  selection: model.Selection,
+) -> Nil {
+  case chars {
+    [] -> Nil
+    [char, ..rest] -> {
+      let selected = model.selection_contains(selection, index)
+      buffer.draw_text(
+        buf,
+        char,
+        x,
+        y,
+        case selected {
+          True -> common.bg_color
+          False -> fg
+        },
+        case selected {
+          True -> common.accent_yellow
+          False -> common.panel_bg
+        },
+        case selected {
+          True -> 1
+          False -> 0
+        },
+      )
+      draw_chars(buf, rest, x + 1, y, index + 1, fg, selection)
+    }
+  }
+}
+
+fn status_title(report: semantics.SelectionReport) -> String {
+  case report.state {
+    semantics.NoSelection ->
+      "No selection - try selecting across different nested elements"
+    semantics.EmptySelection ->
+      "Empty selection in " <> report.primary_container_label
+    semantics.ActiveSelection ->
+      case report.line_count > 1 {
+        True ->
+          "Selected "
+          <> int.to_string(report.line_count)
+          <> " lines ("
+          <> int.to_string(report.selected_chars)
+          <> " chars):"
         False ->
-          case offset == sel.focus {
-            True -> "█"
-            False -> char
-          }
+          "Selected " <> int.to_string(report.selected_chars) <> " chars:"
       }
-      display <> render_with_selection(chars, sel, offset + 1, count - 1)
+  }
+}
+
+fn status_excerpt(report: semantics.SelectionReport) -> String {
+  case report.state {
+    semantics.NoSelection -> "Selected text: (none)"
+    semantics.EmptySelection -> "Selected text: (empty selection)"
+    semantics.ActiveSelection ->
+      case report.excerpt_middle {
+        "" -> "Selected text: " <> report.excerpt_start
+        _ ->
+          "Selected text: "
+          <> report.excerpt_start
+          <> " "
+          <> report.excerpt_middle
+          <> " "
+          <> report.excerpt_end
+      }
+  }
+}
+
+fn debug_line(report: semantics.SelectionReport, dragging: Bool) -> String {
+  let mode = case dragging {
+    True -> "dragging"
+    False -> "idle"
+  }
+
+  "Selected renderables: "
+  <> int.to_string(report.selected_renderables)
+  <> "/"
+  <> int.to_string(report.total_renderables)
+  <> " | Containers: "
+  <> int.to_string(report.selected_containers)
+  <> "/"
+  <> int.to_string(report.total_containers)
+  <> " | Container: "
+  <> report.primary_container_label
+  <> " | mode="
+  <> mode
+}
+
+fn position_to_index(
+  located: List(LocatedLeaf),
+  x: Int,
+  y: Int,
+) -> Result(Int, Nil) {
+  case located {
+    [] -> Error(Nil)
+    [LocatedLeaf(visual:, start:), ..rest] -> {
+      let width = string.length(visual.leaf.text)
+      case y == visual.y && x >= visual.x && x < visual.x + width {
+        True -> Ok(start + x - visual.x)
+        False -> position_to_index(rest, x, y)
+      }
     }
   }
 }
 
-fn nth_char(chars: List(String), index: Int) -> String {
-  case chars, index {
-    [c, ..], 0 -> c
-    [_, ..rest], _ -> nth_char(rest, index - 1)
-    [], _ -> " "
-  }
+fn located_leaves() -> List(LocatedLeaf) {
+  build_located_leaves(visual_leaves(), 0, [])
 }
 
-fn selected_text(chars: List(String), sel: model.Selection) -> String {
-  case model.selection_length(sel) {
-    0 -> "(none)"
-    _ -> {
-      let #(lo, hi) = model.selection_range(sel)
-      chars
-      |> list.drop(lo)
-      |> list.take(hi - lo)
-      |> string.join("")
-      |> string.slice(0, 20)
+fn build_located_leaves(
+  pending: List(VisualLeaf),
+  start: Int,
+  acc: List(LocatedLeaf),
+) -> List(LocatedLeaf) {
+  case pending {
+    [] -> list.reverse(acc)
+    [visual, ..rest] -> {
+      let next_start = start + string.length(visual.leaf.text) + 1
+      build_located_leaves(rest, next_start, [
+        LocatedLeaf(visual: visual, start: start),
+        ..acc
+      ])
     }
   }
 }
 
-fn range_label(sel: model.Selection) -> String {
-  let #(lo, hi) = model.selection_range(sel)
-  int.to_string(lo) <> ".." <> int.to_string(hi)
+fn visual_leaves() -> List(VisualLeaf) {
+  [
+    VisualLeaf(
+      4,
+      4,
+      common.fg_color,
+      semantics.TextLeaf(
+        "left-panel",
+        "Document Section 1",
+        "text1",
+        "Paragraph 1",
+        "This is a paragraph in the first box.",
+      ),
+    ),
+    VisualLeaf(
+      4,
+      5,
+      common.fg_color,
+      semantics.TextLeaf(
+        "left-panel",
+        "Document Section 1",
+        "text2",
+        "Paragraph 2",
+        "Select this text with the mouse.",
+      ),
+    ),
+    VisualLeaf(
+      4,
+      6,
+      common.fg_color,
+      semantics.TextLeaf(
+        "left-panel",
+        "Document Section 1",
+        "text3",
+        "Paragraph 3",
+        "Drag into code or README to extend.",
+      ),
+    ),
+    VisualLeaf(
+      4,
+      7,
+      common.muted_fg,
+      semantics.TextLeaf(
+        "left-panel",
+        "Document Section 1",
+        "text4",
+        "Paragraph 4",
+        "Selection crosses render boundaries.",
+      ),
+    ),
+    VisualLeaf(
+      8,
+      9,
+      common.accent_yellow,
+      semantics.TextLeaf(
+        "nested-box",
+        "Nested Box",
+        "nested1",
+        "Nested label",
+        "Important:",
+      ),
+    ),
+    VisualLeaf(
+      19,
+      9,
+      common.accent_blue,
+      semantics.TextLeaf(
+        "nested-box",
+        "Nested Box",
+        "nested2",
+        "Nested body",
+        "nested content",
+      ),
+    ),
+    VisualLeaf(
+      34,
+      9,
+      common.accent_green,
+      semantics.TextLeaf(
+        "nested-box",
+        "Nested Box",
+        "nested3",
+        "Nested badge",
+        "✓",
+      ),
+    ),
+    VisualLeaf(
+      44,
+      4,
+      common.accent_pink,
+      semantics.TextLeaf(
+        "code-panel",
+        "Code Example",
+        "code1",
+        "Code line 1",
+        "function handleSelection() {",
+      ),
+    ),
+    VisualLeaf(
+      44,
+      5,
+      common.accent_blue,
+      semantics.TextLeaf(
+        "code-panel",
+        "Code Example",
+        "code2",
+        "Code line 2",
+        "  const picked = getSelectedText()",
+      ),
+    ),
+    VisualLeaf(
+      44,
+      6,
+      common.accent_green,
+      semantics.TextLeaf(
+        "code-panel",
+        "Code Example",
+        "code3",
+        "Code line 3",
+        "  console.log(picked)",
+      ),
+    ),
+    VisualLeaf(
+      44,
+      7,
+      common.accent_orange,
+      semantics.TextLeaf(
+        "code-panel",
+        "Code Example",
+        "code4",
+        "Code line 4",
+        "}",
+      ),
+    ),
+    VisualLeaf(
+      20,
+      14,
+      common.accent_blue,
+      semantics.TextLeaf(
+        "readme-panel",
+        "README",
+        "readme1",
+        "README title",
+        "Selection Demo",
+      ),
+    ),
+    VisualLeaf(
+      20,
+      15,
+      common.fg_color,
+      semantics.TextLeaf(
+        "readme-panel",
+        "README",
+        "readme2",
+        "README line 1",
+        "Cross-panel drag selection",
+      ),
+    ),
+    VisualLeaf(
+      20,
+      16,
+      common.muted_fg,
+      semantics.TextLeaf(
+        "readme-panel",
+        "README",
+        "readme3",
+        "README line 2",
+        "Press c to clear the current range",
+      ),
+    ),
+  ]
 }
