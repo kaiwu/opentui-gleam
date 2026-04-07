@@ -246,30 +246,46 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/sprite_particle_generator_demo",
       "Implemented 24-particle system with per-particle phase, speed, and color.",
     ),
-    stub("shader-cube-demo", "opentui/examples/shader_cube_demo", "Phase 5"),
-    stub(
+    done(
+      "shader-cube-demo",
+      "opentui/examples/shader_cube_demo",
+      "Implemented rotating wireframe cube with pure 3D projection and Phong edge shading.",
+    ),
+    done(
       "fractal-shader-demo",
       "opentui/examples/fractal_shader_demo",
-      "Phase 5",
+      "Implemented Mandelbrot fractal rendered per-cell with panning viewport.",
     ),
-    stub("lights-phong-demo", "opentui/examples/lights_phong_demo", "Phase 5"),
-    stub(
+    done(
+      "lights-phong-demo",
+      "opentui/examples/lights_phong_demo",
+      "Implemented Phong-lit sphere with rotating directional light and ambient.",
+    ),
+    done(
       "draggable-three-demo",
       "opentui/examples/draggable_three_demo",
-      "Phase 5",
+      "Implemented keyboard-rotatable 3D wireframe with switchable cube/pyramid meshes.",
     ),
-    stub(
+    done(
       "physx-planck-2d-demo",
       "opentui/examples/physx_planck_2d_demo",
-      "Phase 5",
+      "Implemented 2D physics simulation with 6 bouncing circles and high gravity.",
     ),
-    stub(
+    done(
       "physx-rapier-2d-demo",
       "opentui/examples/physx_rapier_2d_demo",
-      "Phase 5",
+      "Implemented 2D physics with mixed circles and rectangles at high restitution.",
     ),
-    stub("golden-star-demo", "opentui/examples/golden_star_demo", "Phase 5"),
-    stub("opentui-demo", "opentui/examples/opentui_demo", "Phase 5"),
+    done(
+      "golden-star-demo",
+      "opentui/examples/golden_star_demo",
+      "Implemented animated golden star compositing animation, lighting, and framebuffer.",
+    ),
+    done(
+      "opentui-demo",
+      "opentui/examples/opentui_demo",
+      "Implemented multi-panel ecosystem showcase with live stats, fractal, cube, and unicode.",
+    ),
   ]
 }
 
@@ -286,10 +302,6 @@ pub fn help_text() -> String {
 
 fn done(id: String, module: String, description: String) -> Demo {
   Demo(id, module, "[done] " <> description)
-}
-
-fn stub(id: String, module: String, phase: String) -> Demo {
-  Demo(id, module, "[stub] planned in " <> phase)
 }
 
 fn format_demos(demos: List(Demo)) -> String {

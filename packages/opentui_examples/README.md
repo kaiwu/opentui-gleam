@@ -141,14 +141,14 @@ Primary pressure on the stack:
 
 ## Phase 5 — 3D, physics, showcase demos
 
-- [ ] `shader-cube-demo`
-- [ ] `fractal-shader-demo`
-- [ ] `lights-phong-demo`
-- [ ] `draggable-three-demo`
-- [ ] `physx-planck-2d-demo`
-- [ ] `physx-rapier-2d-demo`
-- [ ] `golden-star-demo`
-- [ ] `opentui-demo`
+- [x] `shader-cube-demo`
+- [x] `fractal-shader-demo`
+- [x] `lights-phong-demo`
+- [x] `draggable-three-demo`
+- [x] `physx-planck-2d-demo`
+- [x] `physx-rapier-2d-demo`
+- [x] `golden-star-demo`
+- [x] `opentui-demo`
 
 Primary pressure on the stack:
 

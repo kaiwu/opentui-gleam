@@ -9,7 +9,7 @@ import opentui/examples/phase5_model as model
 import opentui/ffi
 import opentui/input
 import opentui/lighting
-import opentui/math3d.{Vec3}
+import opentui/math3d.{type Vec3, Vec3}
 import opentui/renderer
 
 pub fn main() -> Nil {

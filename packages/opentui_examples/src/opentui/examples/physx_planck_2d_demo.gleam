@@ -6,7 +6,7 @@ import opentui/examples/phase4_model
 import opentui/examples/phase4_state as state
 import opentui/ffi
 import opentui/math3d
-import opentui/physics2d.{Body, Circle, Vec2, World}
+import opentui/physics2d.{type Body, type World, Body, Circle, Vec2}
 
 pub fn main() -> Nil {
   // Store world state as individual float cells for positions

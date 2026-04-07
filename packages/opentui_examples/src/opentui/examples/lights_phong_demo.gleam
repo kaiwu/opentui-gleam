@@ -1,12 +1,11 @@
 import gleam/float
-import gleam/int
 import opentui/buffer
 import opentui/examples/common
 import opentui/examples/phase4_state as state
 import opentui/examples/phase5_model as model
 import opentui/ffi
 import opentui/lighting
-import opentui/math3d.{Vec3}
+import opentui/math3d.{type Vec3, Vec3}
 
 pub fn main() -> Nil {
   let time = state.create_float(0.0)

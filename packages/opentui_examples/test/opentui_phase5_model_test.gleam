@@ -2,7 +2,6 @@ import gleam/float
 import gleam/list
 import gleeunit/should
 import opentui/examples/phase5_model as model
-import opentui/math3d
 
 pub fn cube_mesh_has_8_vertices_test() {
   let mesh = model.cube_mesh()

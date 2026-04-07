@@ -6,7 +6,7 @@ import opentui/examples/phase4_state as state
 import opentui/examples/phase5_model as model
 import opentui/ffi
 import opentui/lighting
-import opentui/math3d.{Vec3}
+import opentui/math3d.{type Vec3, Vec3}
 
 pub fn main() -> Nil {
   let angle_y = state.create_float(0.0)
@@ -41,7 +41,7 @@ fn draw(buf: ffi.Buffer, angle_x: state.FloatCell, angle_y: state.FloatCell) -> 
   let projected =
     list.map(mesh.vertices, fn(v) {
       let rotated = math3d.rotate_euler(v, rx, ry, 0.0)
-      let #(sx, sy, _depth) =
+      let #(sx, sy) =
         math3d.project_simple(rotated, 12.0, 40.0, 11.0)
       #(float.truncate(sx), float.truncate(sy), rotated)
     })

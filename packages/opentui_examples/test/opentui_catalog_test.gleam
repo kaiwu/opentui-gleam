@@ -57,11 +57,19 @@ pub fn catalog_marks_phase_4_demos_done_test() {
   |> should.equal(False)
 }
 
-pub fn catalog_lists_stub_demo_modules_test() {
+pub fn catalog_marks_phase_5_demos_done_test() {
   let help = catalog.help_text()
+  let _ =
+    help
+    |> string.contains("opentui/examples/shader_cube_demo")
+    |> should.equal(True)
+  let _ =
+    help
+    |> string.contains("opentui/examples/opentui_demo")
+    |> should.equal(True)
   help
   |> string.contains("[stub] planned in Phase 5")
-  |> should.equal(True)
+  |> should.equal(False)
 }
 
 pub fn catalog_has_no_phase_1_stubs_test() {
