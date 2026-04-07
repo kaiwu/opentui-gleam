@@ -196,5 +196,7 @@ the point.
   crate arena with auto-spawn, burst, clear/reset, pause, and live status,
   which preserves the upstream demo's second-physics-showcase value without the
   3D sprite/explosion layer.
-- [ ] `draggable-three-demo`: make mouse dragging the primary interaction so it
-  better matches the upstream demo's core purpose.
+- [x] `draggable-three-demo`: now makes mouse dragging the primary interaction
+  by turning the 3D viewport itself into a draggable surface, which preserves
+  the upstream demo's core teaching value without transparency/screenshot
+  parity.
