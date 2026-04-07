@@ -123,14 +123,14 @@ Primary pressure on the stack:
 
 ## Phase 4 — framebuffer, unicode, animation, assets
 
-- [ ] `framebuffer-demo`
-- [ ] `full-unicode-demo`
-- [ ] `wide-grapheme-overlay-demo`
-- [ ] `timeline-example`
-- [ ] `static-sprite-demo`
-- [ ] `texture-loading-demo`
-- [ ] `sprite-animation-demo`
-- [ ] `sprite-particle-generator-demo`
+- [x] `framebuffer-demo`
+- [x] `full-unicode-demo`
+- [x] `wide-grapheme-overlay-demo`
+- [x] `timeline-example`
+- [x] `static-sprite-demo`
+- [x] `texture-loading-demo`
+- [x] `sprite-animation-demo`
+- [x] `sprite-particle-generator-demo`
 
 Primary pressure on the stack:
 

@@ -206,29 +206,45 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/core_plugin_slots_demo",
       "Implemented higher-order slot composition with toggleable named render slots.",
     ),
-    stub("framebuffer-demo", "opentui/examples/framebuffer_demo", "Phase 4"),
-    stub("full-unicode-demo", "opentui/examples/full_unicode_demo", "Phase 4"),
-    stub(
+    done(
+      "framebuffer-demo",
+      "opentui/examples/framebuffer_demo",
+      "Implemented bouncing ball and box with framebuffer compositing and alpha overlays.",
+    ),
+    done(
+      "full-unicode-demo",
+      "opentui/examples/full_unicode_demo",
+      "Implemented per-grapheme unicode rendering with display width analysis.",
+    ),
+    done(
       "wide-grapheme-overlay-demo",
       "opentui/examples/wide_grapheme_overlay_demo",
-      "Phase 4",
+      "Implemented wide-char framebuffer overlays with alpha-blended layer compositing.",
     ),
-    stub("timeline-example", "opentui/examples/timeline_example", "Phase 4"),
-    stub("static-sprite-demo", "opentui/examples/static_sprite_demo", "Phase 4"),
-    stub(
+    done(
+      "timeline-example",
+      "opentui/examples/timeline_example",
+      "Implemented pure timeline animation with ease-in-out and hue cycling tweens.",
+    ),
+    done(
+      "static-sprite-demo",
+      "opentui/examples/static_sprite_demo",
+      "Implemented hue-rotating diamond sprite via framebuffer cell rendering.",
+    ),
+    done(
       "texture-loading-demo",
       "opentui/examples/texture_loading_demo",
-      "Phase 4",
+      "Implemented procedural texture grid with animated hue cycling.",
     ),
-    stub(
+    done(
       "sprite-animation-demo",
       "opentui/examples/sprite_animation_demo",
-      "Phase 4",
+      "Implemented 4-frame sprite animation with bounce easing and timeline.",
     ),
-    stub(
+    done(
       "sprite-particle-generator-demo",
       "opentui/examples/sprite_particle_generator_demo",
-      "Phase 4",
+      "Implemented 24-particle system with per-particle phase, speed, and color.",
     ),
     stub("shader-cube-demo", "opentui/examples/shader_cube_demo", "Phase 5"),
     stub(

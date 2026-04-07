@@ -42,10 +42,25 @@ pub fn catalog_marks_phase_3_demos_done_test() {
   |> should.equal(False)
 }
 
+pub fn catalog_marks_phase_4_demos_done_test() {
+  let help = catalog.help_text()
+  let _ =
+    help
+    |> string.contains("opentui/examples/framebuffer_demo")
+    |> should.equal(True)
+  let _ =
+    help
+    |> string.contains("opentui/examples/timeline_example")
+    |> should.equal(True)
+  help
+  |> string.contains("[stub] planned in Phase 4")
+  |> should.equal(False)
+}
+
 pub fn catalog_lists_stub_demo_modules_test() {
   let help = catalog.help_text()
   help
-  |> string.contains("[stub] planned in Phase 4")
+  |> string.contains("[stub] planned in Phase 5")
   |> should.equal(True)
 }
 
