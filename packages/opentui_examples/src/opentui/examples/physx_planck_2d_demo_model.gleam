@@ -1,13 +1,12 @@
 import gleam/int
 import opentui/physics2d.{type Body, type World, Body, Circle, Rect, Vec2}
+import opentui/simulation
 import opentui/timeline
 
 pub type System {
   System(
     world: World,
-    auto_spawn: Bool,
-    paused: Bool,
-    spawn_interval: timeline.Interval,
+    auto_state: simulation.AutoState,
     spawn_counter: Int,
     max_bodies: Int,
   )
@@ -26,28 +25,21 @@ const default_max_bodies = 24
 pub fn create() -> System {
   System(
     world: seed_world(base_world(), 0, 3),
-    auto_spawn: True,
-    paused: False,
-    spawn_interval: timeline.every(800.0),
+    auto_state: simulation.create(timeline.every(800.0)),
     spawn_counter: 3,
     max_bodies: default_max_bodies,
   )
 }
 
 pub fn tick(system: System, dt_ms: Float) -> System {
-  case system.paused {
-    True -> system
+  let simulation.TickResult(auto_state, firings) =
+    simulation.tick(system.auto_state, dt_ms)
+  case simulation.is_paused(auto_state) {
+    True -> System(..system, auto_state: auto_state)
     False -> {
       let stepped = physics2d.step(system.world, dt_ms /. 1000.0)
-      let updated = System(..system, world: stepped)
-      case updated.auto_spawn {
-        True -> apply_auto_spawn(updated, dt_ms)
-        False ->
-          System(
-            ..updated,
-            spawn_interval: timeline.reset(updated.spawn_interval),
-          )
-      }
+      let updated = System(..system, world: stepped, auto_state: auto_state)
+      spawn_firings(updated, firings)
     }
   }
 }
@@ -61,22 +53,18 @@ pub fn burst(system: System) -> System {
 }
 
 pub fn toggle_auto(system: System) -> System {
-  System(
-    ..system,
-    auto_spawn: !system.auto_spawn,
-    spawn_interval: timeline.reset(system.spawn_interval),
-  )
+  System(..system, auto_state: simulation.toggle_enabled(system.auto_state))
 }
 
 pub fn toggle_pause(system: System) -> System {
-  System(..system, paused: !system.paused)
+  System(..system, auto_state: simulation.toggle_paused(system.auto_state))
 }
 
 pub fn clear(system: System) -> System {
   System(
     ..system,
     world: base_world(),
-    spawn_interval: timeline.reset(system.spawn_interval),
+    auto_state: simulation.reset_interval(system.auto_state),
   )
 }
 
@@ -93,11 +81,11 @@ pub fn get_bodies(system: System) -> List(Body) {
 }
 
 pub fn is_auto(system: System) -> Bool {
-  system.auto_spawn
+  simulation.is_enabled(system.auto_state)
 }
 
 pub fn is_paused(system: System) -> Bool {
-  system.paused
+  simulation.is_paused(system.auto_state)
 }
 
 pub fn max_bodies(system: System) -> Int {
@@ -105,11 +93,11 @@ pub fn max_bodies(system: System) -> Int {
 }
 
 pub fn format_status(system: System) -> String {
-  let auto_text = case system.auto_spawn {
+  let auto_text = case simulation.is_enabled(system.auto_state) {
     True -> "on"
     False -> "off"
   }
-  let state = case system.paused {
+  let state = case simulation.is_paused(system.auto_state) {
     True -> "paused"
     False -> "running"
   }
@@ -132,12 +120,6 @@ pub fn format_instructions() -> String {
   "Space: spawn  b: burst  a: auto  c: clear  r: reset  p: pause"
 }
 
-fn apply_auto_spawn(system: System, dt_ms: Float) -> System {
-  let timeline.TickResult(interval, firings) =
-    timeline.tick(system.spawn_interval, dt_ms)
-  spawn_firings(System(..system, spawn_interval: interval), firings)
-}
-
 fn spawn_firings(system: System, firings: Int) -> System {
   case firings <= 0 {
     True -> system
@@ -156,7 +138,7 @@ fn spawn_many(system: System, requested: Int) -> System {
         ..system,
         world: world,
         spawn_counter: system.spawn_counter + actual,
-        spawn_interval: timeline.reset(system.spawn_interval),
+        auto_state: simulation.reset_interval(system.auto_state),
       )
     }
   }

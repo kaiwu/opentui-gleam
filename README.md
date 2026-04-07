@@ -1,6 +1,6 @@
 # opentui-gleam
 
-This repository is now structured as a **Gleam monorepo** with multiple self-contained packages that can be evolved toward independent Hex.pm publication.
+This repository is a **Gleam-first OpenTUI monorepo** that ports and grows the OpenTUI ecosystem in a language better suited to the project’s long-term direction: typed functional composition, explicit data flow, and reusable pure abstractions. We use Gleam because the repository is not just binding a native library; it is trying to build a composable terminal UI stack where UI trees, interaction reducers, layout planning, animation state, and rendering plans can be modeled as testable data before the final terminal side effect.
 
 ## Package layout
 
@@ -111,10 +111,20 @@ Run a specific demo:
 Available root-level example names:
 
 - `catalog`
+- any example id supported by `./scripts/run-example.sh`, including the phase demos and showcase demos
+
+For example:
+
 - `editor`
-- `terminal-title`
-- `text-wrap`
-- `text-truncation`
+- `text-selection-demo`
+- `sprite-animation-demo`
+- `sprite-particle-generator-demo`
+- `physx-planck-2d-demo`
+- `physx-rapier-2d-demo`
+- `draggable-three-demo`
+- `opentui-demo`
+
+The examples package is no longer just a small bootstrap set. It now contains the full phased demo catalog and is effectively the runnable proof that the lower-level `core` / `runtime` / `ui` packages are covering the intended OpenTUI surface area. For the full current list and phase breakdown, see `packages/opentui_examples/README.md` or run `./scripts/run-example.sh catalog`.
 
 ## Publishing direction
 
@@ -144,13 +154,13 @@ way.
 - [x] Add pure timeline / animation helpers in `packages/opentui_ui` or
   `packages/opentui_runtime` for common `tick` / `toggle` / `pause` /
   auto-advance / rate-limited spawn patterns.
-- [ ] Consolidate repeated demo-local state machine shapes into reusable,
+- [x] Consolidate repeated demo-local state machine shapes into reusable,
   testable reducer-style helpers while keeping package dependencies flowing
   downward.
 - [x] Evaluate whether wireframe / projected-scene planning should live in
   `packages/opentui_ui` as a pure intermediate representation, with clipping and
   raster planning tested independently from rendering.
-- [ ] Add tests for any new pure planning/reducer layers before migrating demos
+- [x] Add tests for any new pure planning/reducer layers before migrating demos
   onto them, so composability improvements do not regress the current examples.
-- [ ] Migrate one existing demo at a time onto the new pure abstractions and run
+- [x] Migrate one existing demo at a time onto the new pure abstractions and run
   the full test suite after each step rather than batching a large refactor.

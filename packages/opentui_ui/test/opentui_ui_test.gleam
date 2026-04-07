@@ -2,8 +2,10 @@ import gleam/string
 import gleeunit
 import gleeunit/should
 import opentui/draw_plan
+import opentui/frame_playback
 import opentui/interaction
 import opentui/math3d.{Vec3}
+import opentui/simulation
 import opentui/text
 import opentui/timeline
 import opentui/ui
@@ -173,6 +175,83 @@ pub fn timeline_reset_clears_elapsed_test() {
     timeline.tick(timeline.every(500.0), 300.0)
   timeline.reset(interval)
   |> should.equal(timeline.Interval(True, 500.0, 0.0))
+}
+
+pub fn simulation_tick_fires_when_enabled_and_running_test() {
+  simulation.tick(simulation.create(timeline.every(800.0)), 1700.0)
+  |> should.equal(simulation.TickResult(
+    simulation.AutoState(True, False, timeline.Interval(True, 800.0, 100.0)),
+    2,
+  ))
+}
+
+pub fn simulation_tick_paused_has_no_firings_test() {
+  simulation.create(timeline.every(800.0))
+  |> simulation.toggle_paused
+  |> fn(state) { simulation.tick(state, 1700.0) }
+  |> should.equal(simulation.TickResult(
+    simulation.AutoState(True, True, timeline.Interval(True, 800.0, 0.0)),
+    0,
+  ))
+}
+
+pub fn simulation_disabled_tick_resets_interval_test() {
+  let simulation.TickResult(state, _) =
+    simulation.tick(simulation.create(timeline.every(800.0)), 300.0)
+
+  state
+  |> simulation.toggle_enabled
+  |> fn(disabled) { simulation.tick(disabled, 1700.0) }
+  |> should.equal(simulation.TickResult(
+    simulation.AutoState(False, False, timeline.Interval(True, 800.0, 0.0)),
+    0,
+  ))
+}
+
+pub fn simulation_reset_interval_clears_elapsed_test() {
+  let simulation.TickResult(state, _) =
+    simulation.tick(simulation.create(timeline.every(800.0)), 300.0)
+
+  state
+  |> simulation.reset_interval
+  |> should.equal(simulation.AutoState(
+    True,
+    False,
+    timeline.Interval(True, 800.0, 0.0),
+  ))
+}
+
+pub fn frame_playback_tick_advances_when_running_test() {
+  frame_playback.create(4, 200.0)
+  |> frame_playback.tick(150.0)
+  |> should.equal(frame_playback.Playback(True, 150.0, 200.0, 4))
+}
+
+pub fn frame_playback_tick_stops_when_paused_test() {
+  frame_playback.create(4, 200.0)
+  |> frame_playback.pause
+  |> frame_playback.tick(150.0)
+  |> should.equal(frame_playback.Playback(False, 0.0, 200.0, 4))
+}
+
+pub fn frame_playback_current_frame_wraps_test() {
+  frame_playback.create(4, 200.0)
+  |> frame_playback.tick(800.0)
+  |> frame_playback.current_frame
+  |> should.equal(0)
+}
+
+pub fn frame_playback_speed_controls_clamp_test() {
+  let faster =
+    frame_playback.create(4, 50.0)
+    |> frame_playback.increase_speed
+
+  let slower =
+    frame_playback.create(4, 2000.0)
+    |> frame_playback.decrease_speed
+
+  let _ = faster |> should.equal(frame_playback.Playback(True, 0.0, 50.0, 4))
+  slower |> should.equal(frame_playback.Playback(True, 0.0, 2000.0, 4))
 }
 
 pub fn fold_counts_nested_elements_test() {

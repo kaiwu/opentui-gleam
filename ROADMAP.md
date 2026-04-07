@@ -15,47 +15,69 @@ The goal is not only to expose raw native bindings. The goal is to grow a packag
 
 ## Current Status
 
-The repository already has a good foundation, but it does **not** yet provide full OpenTUI coverage from Gleam alone.
+The repository has moved beyond a thin-binding foundation and now has a real monorepo shape with substantial runnable coverage. It still does **not** yet provide full OpenTUI coverage from Gleam alone, but it already demonstrates that the core/runtime/ui/examples split is viable and that many upstream demo ideas can be expressed in Gleam-first abstractions.
 
 ### What is already in place
 
 - raw FFI access in `packages/opentui_core/src/opentui/ffi.gleam`
 - Bun FFI shim in `packages/opentui_core/src/opentui/ffi_shim.js`
 - direct native loading from `native/opentui-zig/packages/core/src/zig/lib/<target>/`
-- basic high-level wrappers:
+- high-level runtime wrappers:
   - `packages/opentui_runtime/src/opentui/renderer.gleam`
   - `packages/opentui_runtime/src/opentui/buffer.gleam`
   - `packages/opentui_runtime/src/opentui/edit_buffer.gleam`
   - `packages/opentui_runtime/src/opentui/text.gleam`
   - `packages/opentui_runtime/src/opentui/types.gleam`
+  - `packages/opentui_runtime/src/opentui/text_buffer.gleam`
+  - `packages/opentui_runtime/src/opentui/editor_view.gleam`
+  - `packages/opentui_runtime/src/opentui/syntax_style.gleam`
+  - `packages/opentui_runtime/src/opentui/input.gleam`
+  - `packages/opentui_runtime/src/opentui/framebuffer.gleam`
+  - `packages/opentui_runtime/src/opentui/animation.gleam`
+  - `packages/opentui_runtime/src/opentui/grapheme.gleam`
+  - `packages/opentui_runtime/src/opentui/physics2d.gleam`
+  - `packages/opentui_runtime/src/opentui/math3d.gleam`
+  - `packages/opentui_runtime/src/opentui/lighting.gleam`
   - `packages/opentui_core/src/opentui/runtime.gleam`
+- a growing pure UI layer in `packages/opentui_ui`, including:
+  - `opentui/ui.gleam`
+  - `opentui/draw_plan.gleam`
+  - `opentui/interaction.gleam`
+  - `opentui/timeline.gleam`
+  - `opentui/wireframe.gleam`
+  - `opentui/simulation.gleam`
+  - `opentui/frame_playback.gleam`
 - demo registry and examples:
   - `packages/opentui_examples/src/opentui/catalog.gleam`
   - `packages/opentui_examples/src/opentui/examples/*`
+- package-local test suites across `core`, `runtime`, `ui`, and `examples`
 
 ### What is currently demonstrated
 
 - renderer lifecycle and terminal setup
 - buffer drawing
-- basic text editing
-- pure Gleam text wrapping/truncation helpers
-- direct runnable demos through `gleam run -m ...`
+- text wrapping/truncation helpers
+- text-buffer and editor-view driven demos
+- input, focus, scrolling, layout, and widget demos
+- framebuffer, unicode, animation, and texture demos
+- 3D and physics showcase demos
+- direct runnable demos through `gleam run -m ...` and `./scripts/run-example.sh ...`
+- pure intermediate representations for draw plans, interaction reducers, timeline helpers, wireframe planning, simulation state, and frame playback
 
 ### What is still missing
 
-The current Gleam surface is still missing major OpenTUI capability areas:
+The current Gleam surface is still missing or only partially covers some major OpenTUI capability areas:
 
-- full `TextBuffer` wrapper
-- full `EditorView` wrapper
-- syntax style wrapper
-- higher-level input and event model
+- deeper `TextBuffer` coverage and polish
+- deeper `EditorView` coverage and polish
+- broader syntax/highlighting wrapper coverage
+- higher-level input and event model above demo loops
 - hit-grid wrapper APIs
 - clipboard wrapper APIs
 - callback/event wrapper APIs
-- layout/renderable abstraction layer
-- reusable widgets/components
-- testing utilities
-- optional advanced slices like 3D/WebGPU
+- a richer layout/renderable/widget surface in `opentui_ui`
+- reusable testing utilities as a dedicated package or package surface
+- optional advanced slices like a separately publishable 3D package
 - any equivalent of upstream framework adapter layers, if Gleam eventually needs them
 
 ## Upstream Package Reference
@@ -134,7 +156,8 @@ Status:
 
 - initial package created
 - first-pass `Element` tree and renderer added
-- first migrated examples: `terminal_title`, `text_wrap`, `text_truncation`
+- pure helper layers now include draw plans, interaction reducers, timeline helpers, wireframe planning, simulation reducers, and frame playback helpers
+- many examples across phases 1–5 now depend on reusable lower-level `runtime` and `ui` modules instead of only demo-local imperative code
 
 ### 4. `opentui_testing`
 
@@ -218,10 +241,10 @@ Goals:
 
 Priority additions:
 
-- `text_buffer`
-- `editor_view`
-- `syntax_style`
-- selection support
+- continue deepening `text_buffer`
+- continue deepening `editor_view`
+- continue deepening `syntax_style`
+- selection support polish
 - hit-grid helpers
 - clipboard support
 - callback/event wrapper layer
@@ -235,6 +258,7 @@ Deliverables:
 Goals:
 
 - move beyond imperative demos and expose composable Gleam UI building blocks
+- continue migrating proven demo-local pure helpers downward into `opentui_ui`
 
 Priority additions:
 
@@ -247,7 +271,7 @@ Priority additions:
 
 Deliverables:
 
-- a real `opentui_ui`-style package surface
+- a broader `opentui_ui` package surface with reusable layout, interaction, planning, and widget building blocks
 
 ### Phase 4 — Expand demos into a real showcase ecosystem
 
@@ -257,9 +281,9 @@ Goals:
 
 Priority additions:
 
-- more ports of simple upstream TS examples
-- examples that exercise text buffers, editor views, widgets, and layout systems
-- app-like demos rather than only feature snippets
+- keep parity and behavior quality high across the now-broad demo catalog
+- continue improving remaining gaps where the Gleam demos still get the point but are not yet ideal
+- add more app-like demos rather than only feature snippets where useful
 
 Deliverables:
 
@@ -282,12 +306,12 @@ Priority additions:
 
 The next most valuable steps are:
 
-1. add `text_buffer` wrapper module
-2. add `editor_view` wrapper module
-3. add `syntax_style` wrapper module
-4. create a proper input/event abstraction above demo loops
-5. port more upstream examples using reusable Gleam modules
-6. expand test coverage beyond catalog/text helpers into runtime-facing APIs where practical
+1. deepen `text_buffer` wrapper coverage where the current demos still need lower-level escape hatches
+2. deepen `editor_view` and syntax-style coverage so editor/code demos depend less on demo-local assembly
+3. create a proper higher-level input/event abstraction above raw demo loops
+4. add hit-grid / clipboard / callback wrappers where upstream capabilities still have no ergonomic Gleam surface
+5. continue extracting reusable widgets and layout helpers into `opentui_ui`
+6. design a dedicated `opentui_testing` story for synthetic input, snapshots, and demo/widget verification
 
 ## Non-Goals for Now
 
@@ -306,6 +330,7 @@ We can claim a strong Gleam-first OpenTUI ecosystem when:
 - demos exercise multiple capabilities through reusable abstractions, not one-off imperative code
 - package boundaries are clear enough to publish stable Hex packages
 - testing exists for both pure helpers and runtime-facing behaviors
+- the remaining runtime and widget gaps are small enough that the examples package is showcasing polish rather than compensating for missing lower-level surfaces
 
 ## Near-Term Publishable Story
 
