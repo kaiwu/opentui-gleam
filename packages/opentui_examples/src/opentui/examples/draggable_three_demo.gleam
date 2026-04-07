@@ -1,7 +1,7 @@
 import gleam/float
 import gleam/int
 import gleam/list
-import opentui/buffer
+import opentui/draw_plan
 import opentui/examples/common
 import opentui/examples/draggable_three_demo_model as model_state
 import opentui/examples/phase4_state as state
@@ -94,7 +94,6 @@ fn draw(buf: ffi.Buffer, drag_state: state.GenericCell) -> Nil {
     19,
     "Draggable 3D — " <> model_state.mesh_name(viewport),
   )
-  draw_viewport(buf, viewport)
 
   let light_dir = math3d.vec3_normalize(Vec3(0.5, 0.8, 0.6))
   let projected =
@@ -110,73 +109,89 @@ fn draw(buf: ffi.Buffer, drag_state: state.GenericCell) -> Nil {
       #(float.truncate(sx), float.truncate(sy), rotated)
     })
 
-  draw_edges(buf, projected, mesh.edges, light_dir, viewport)
-  draw_vertices(buf, projected, viewport)
-
-  buffer.draw_text(
+  draw_plan.render(
     buf,
-    model_state.status_text(viewport),
-    4,
-    common.term_h - 1,
-    common.fg_color,
-    common.status_bg,
-    0,
-  )
-  buffer.draw_text(
-    buf,
-    model_state.instructions_text(),
-    4,
-    19,
-    common.muted_fg,
-    common.panel_bg,
-    0,
+    plan_for_view(viewport, projected, mesh.edges, light_dir),
   )
 }
 
-fn draw_viewport(buf: ffi.Buffer, viewport: model_state.DragState) -> Nil {
-  let bg = case viewport.dragging {
-    True -> #(0.08, 0.11, 0.18, 1.0)
-    False -> #(0.03, 0.05, 0.08, 1.0)
-  }
-  buffer.fill_rect(
-    buf,
-    viewport.left,
-    viewport.top,
-    viewport.width,
-    viewport.height,
-    bg,
-  )
-  draw_rect_outline(
-    buf,
-    viewport.left,
-    viewport.top,
-    viewport.width,
-    viewport.height,
-    case viewport.dragging {
-      True -> common.accent_blue
-      False -> common.border_fg
-    },
-  )
-  buffer.draw_text(
-    buf,
-    "drag me",
-    viewport.left + 2,
-    viewport.top,
-    common.fg_color,
-    bg,
-    0,
-  )
-}
-
-fn draw_edges(
-  buf: ffi.Buffer,
+fn plan_for_view(
+  viewport: model_state.DragState,
   projected: List(#(Int, Int, Vec3)),
   edges: List(model.Edge),
   light_dir: Vec3,
-  state: model_state.DragState,
-) -> Nil {
+) -> List(draw_plan.DrawOp) {
+  draw_plan.concat([
+    viewport_plan(viewport),
+    edge_plan(projected, edges, light_dir, viewport),
+    vertex_plan(projected, viewport),
+    [
+      draw_plan.text(
+        4,
+        common.term_h - 1,
+        model_state.status_text(viewport),
+        color(common.fg_color),
+        color(common.status_bg),
+        0,
+      ),
+      draw_plan.text(
+        4,
+        19,
+        model_state.instructions_text(),
+        color(common.muted_fg),
+        color(common.panel_bg),
+        0,
+      ),
+    ],
+  ])
+}
+
+fn viewport_plan(viewport: model_state.DragState) -> List(draw_plan.DrawOp) {
+  let bg = case viewport.drag.active {
+    True -> draw_plan.Color(0.08, 0.11, 0.18, 1.0)
+    False -> draw_plan.Color(0.03, 0.05, 0.08, 1.0)
+  }
+  draw_plan.concat([
+    [
+      draw_plan.fill_rect(
+        viewport.left,
+        viewport.top,
+        viewport.width,
+        viewport.height,
+        bg,
+      ),
+    ],
+    rect_outline_plan(
+      viewport.left,
+      viewport.top,
+      viewport.width,
+      viewport.height,
+      case viewport.drag.active {
+        True -> color(common.accent_blue)
+        False -> color(common.border_fg)
+      },
+    ),
+    [
+      draw_plan.text(
+        viewport.left + 2,
+        viewport.top,
+        "drag me",
+        color(common.fg_color),
+        bg,
+        0,
+      ),
+    ],
+  ])
+}
+
+fn edge_plan(
+  projected: List(#(Int, Int, Vec3)),
+  edges: List(model.Edge),
+  light_dir: Vec3,
+  viewport: model_state.DragState,
+) -> List(draw_plan.DrawOp) {
   case edges {
-    [] -> Nil
+    [] -> []
     [edge, ..rest] -> {
       let #(ax, ay, a_pos) = list_at(projected, edge.a)
       let #(bx, by, b_pos) = list_at(projected, edge.b)
@@ -185,91 +200,122 @@ fn draw_edges(
       let brightness = lighting.diffuse(normal, light_dir) *. 0.6 +. 0.4
       let points = model.line_points(ax, ay, bx, by)
       let char = model.shade_char(brightness)
-      let color = #(brightness *. 0.4, brightness *. 0.7, brightness, 1.0)
-      draw_point_list(buf, points, char, color, state)
-      draw_edges(buf, projected, rest, light_dir, state)
+      let edge_color =
+        draw_plan.Color(brightness *. 0.4, brightness *. 0.7, brightness, 1.0)
+      draw_plan.concat([
+        point_plan(points, char, edge_color, viewport),
+        edge_plan(projected, rest, light_dir, viewport),
+      ])
     }
   }
 }
 
-fn draw_vertices(
-  buf: ffi.Buffer,
+fn vertex_plan(
   projected: List(#(Int, Int, Vec3)),
-  state: model_state.DragState,
-) -> Nil {
+  viewport: model_state.DragState,
+) -> List(draw_plan.DrawOp) {
   case projected {
-    [] -> Nil
+    [] -> []
     [#(x, y, _), ..rest] -> {
-      case in_viewport(state, x, y) {
-        True ->
-          buffer.set_cell(
-            buf,
+      let head = case in_viewport(viewport, x, y) {
+        True -> [
+          draw_plan.cell(
             x,
             y,
             0x25CF,
-            common.accent_orange,
-            #(0.0, 0.0, 0.0, 0.0),
+            color(common.accent_orange),
+            transparent(),
             0,
-          )
-        False -> Nil
+          ),
+        ]
+        False -> []
       }
-      draw_vertices(buf, rest, state)
+      draw_plan.concat([head, vertex_plan(rest, viewport)])
     }
   }
 }
 
-fn draw_point_list(
-  buf: ffi.Buffer,
+fn point_plan(
   points: List(#(Int, Int)),
   char: Int,
-  color: #(Float, Float, Float, Float),
-  state: model_state.DragState,
-) -> Nil {
+  fg: draw_plan.Color,
+  viewport: model_state.DragState,
+) -> List(draw_plan.DrawOp) {
   case points {
-    [] -> Nil
+    [] -> []
     [#(x, y), ..rest] -> {
-      case in_viewport(state, x, y) {
-        True ->
-          buffer.set_cell(buf, x, y, char, color, #(0.0, 0.0, 0.0, 0.0), 0)
-        False -> Nil
+      let head = case in_viewport(viewport, x, y) {
+        True -> [draw_plan.cell(x, y, char, fg, transparent(), 0)]
+        False -> []
       }
-      draw_point_list(buf, rest, char, color, state)
+      draw_plan.concat([head, point_plan(rest, char, fg, viewport)])
     }
   }
 }
 
-fn draw_rect_outline(
-  buf: ffi.Buffer,
+fn rect_outline_plan(
   x: Int,
   y: Int,
   w: Int,
   h: Int,
-  color: #(Float, Float, Float, Float),
-) -> Nil {
-  common.each_index(w, fn(i) {
-    buffer.set_cell(buf, x + i, y, 0x2500, color, #(0.0, 0.0, 0.0, 0.0), 0)
-    buffer.set_cell(
-      buf,
-      x + i,
-      y + h - 1,
-      0x2500,
-      color,
-      #(0.0, 0.0, 0.0, 0.0),
-      0,
-    )
-  })
-  common.each_index(h, fn(i) {
-    buffer.set_cell(buf, x, y + i, 0x2502, color, #(0.0, 0.0, 0.0, 0.0), 0)
-    buffer.set_cell(
-      buf,
-      x + w - 1,
-      y + i,
-      0x2502,
-      color,
-      #(0.0, 0.0, 0.0, 0.0),
-      0,
-    )
-  })
+  fg: draw_plan.Color,
+) -> List(draw_plan.DrawOp) {
+  draw_plan.concat([
+    horizontal_border_plan(x, y, w, fg),
+    horizontal_border_plan(x, y + h - 1, w, fg),
+    vertical_border_plan(x, y, h, fg),
+    vertical_border_plan(x + w - 1, y, h, fg),
+  ])
+}
+
+fn horizontal_border_plan(
+  x: Int,
+  y: Int,
+  w: Int,
+  fg: draw_plan.Color,
+) -> List(draw_plan.DrawOp) {
+  horizontal_border_plan_loop(x, y, w, fg, 0)
+}
+
+fn horizontal_border_plan_loop(
+  x: Int,
+  y: Int,
+  w: Int,
+  fg: draw_plan.Color,
+  i: Int,
+) -> List(draw_plan.DrawOp) {
+  case i >= w {
+    True -> []
+    False -> [
+      draw_plan.cell(x + i, y, 0x2500, fg, transparent(), 0),
+      ..horizontal_border_plan_loop(x, y, w, fg, i + 1)
+    ]
+  }
+}
+
+fn vertical_border_plan(
+  x: Int,
+  y: Int,
+  h: Int,
+  fg: draw_plan.Color,
+) -> List(draw_plan.DrawOp) {
+  vertical_border_plan_loop(x, y, h, fg, 0)
+}
+
+fn vertical_border_plan_loop(
+  x: Int,
+  y: Int,
+  h: Int,
+  fg: draw_plan.Color,
+  i: Int,
+) -> List(draw_plan.DrawOp) {
+  case i >= h {
+    True -> []
+    False -> [
+      draw_plan.cell(x, y + i, 0x2502, fg, transparent(), 0),
+      ..vertical_border_plan_loop(x, y, h, fg, i + 1)
+    ]
+  }
 }
 
 fn in_viewport(viewport: model_state.DragState, x: Int, y: Int) -> Bool {
@@ -285,4 +331,12 @@ fn list_at(items: List(a), index: Int) -> a {
     [_, ..rest], n -> list_at(rest, n - 1)
     [], _ -> panic as "list_at: index out of bounds"
   }
+}
+
+fn color(tuple: #(Float, Float, Float, Float)) -> draw_plan.Color {
+  draw_plan.Color(tuple.0, tuple.1, tuple.2, tuple.3)
+}
+
+fn transparent() -> draw_plan.Color {
+  draw_plan.Color(0.0, 0.0, 0.0, 0.0)
 }

@@ -127,3 +127,30 @@ This layout is designed so each package can become independently publishable to 
 - versioning/tag prefix
 
 See `ROADMAP.md` for the longer-term package plan.
+
+## FP composability follow-up checklist
+
+The recent demo parity passes improved the repository by pushing more logic into
+pure demo-local model modules with tests, while keeping imperative rendering at
+the final TUI boundary. The next step is to consolidate the reusable parts of
+those patterns into core/runtime/ui layers in a more composable and testable
+way.
+
+- [x] Add a pure draw-plan layer in `packages/opentui_ui` so demos and widgets
+  can build `line` / `rect` / `cell` / `text` / layered scene data first, then
+  lower it into buffer calls in one final pass.
+- [x] Add reusable pure interaction reducers in `packages/opentui_ui` for mouse
+  dragging, hit testing, bounded movement, and viewport state transitions.
+- [ ] Add pure timeline / animation helpers in `packages/opentui_ui` or
+  `packages/opentui_runtime` for common `tick` / `toggle` / `pause` /
+  auto-advance / rate-limited spawn patterns.
+- [ ] Consolidate repeated demo-local state machine shapes into reusable,
+  testable reducer-style helpers while keeping package dependencies flowing
+  downward.
+- [ ] Evaluate whether wireframe / projected-scene planning should live in
+  `packages/opentui_ui` as a pure intermediate representation, with clipping and
+  raster planning tested independently from rendering.
+- [ ] Add tests for any new pure planning/reducer layers before migrating demos
+  onto them, so composability improvements do not regress the current examples.
+- [ ] Migrate one existing demo at a time onto the new pure abstractions and run
+  the full test suite after each step rather than batching a large refactor.

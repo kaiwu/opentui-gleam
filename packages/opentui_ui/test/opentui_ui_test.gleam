@@ -1,11 +1,143 @@
 import gleam/string
 import gleeunit
 import gleeunit/should
+import opentui/draw_plan
+import opentui/interaction
 import opentui/text
 import opentui/ui
 
 pub fn main() {
   gleeunit.main()
+}
+
+pub fn draw_plan_append_and_count_test() {
+  []
+  |> draw_plan.append(draw_plan.fill_rect(
+    1,
+    2,
+    3,
+    4,
+    draw_plan.Color(0.1, 0.2, 0.3, 1.0),
+  ))
+  |> draw_plan.append(draw_plan.text(
+    3,
+    4,
+    "hi",
+    draw_plan.Color(1.0, 1.0, 1.0, 1.0),
+    draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+    0,
+  ))
+  |> draw_plan.op_count
+  |> should.equal(2)
+}
+
+pub fn draw_plan_concat_preserves_order_test() {
+  let plan =
+    draw_plan.concat([
+      [
+        draw_plan.cell(
+          1,
+          1,
+          65,
+          draw_plan.Color(1.0, 0.0, 0.0, 1.0),
+          draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+          0,
+        ),
+      ],
+      [
+        draw_plan.text(
+          2,
+          2,
+          "ok",
+          draw_plan.Color(1.0, 1.0, 1.0, 1.0),
+          draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+          0,
+        ),
+      ],
+    ])
+
+  plan
+  |> should.equal([
+    draw_plan.Cell(
+      1,
+      1,
+      65,
+      draw_plan.Color(1.0, 0.0, 0.0, 1.0),
+      draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+      0,
+    ),
+    draw_plan.Text(
+      2,
+      2,
+      "ok",
+      draw_plan.Color(1.0, 1.0, 1.0, 1.0),
+      draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+      0,
+    ),
+  ])
+}
+
+pub fn draw_plan_map_updates_cells_test() {
+  [
+    draw_plan.cell(
+      4,
+      5,
+      42,
+      draw_plan.Color(0.2, 0.4, 0.6, 1.0),
+      draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+      0,
+    ),
+  ]
+  |> draw_plan.map(fn(op) {
+    case op {
+      draw_plan.Cell(x, y, codepoint, fg, bg, attrs) ->
+        draw_plan.Cell(x + 1, y + 2, codepoint, fg, bg, attrs)
+      other -> other
+    }
+  })
+  |> should.equal([
+    draw_plan.Cell(
+      5,
+      7,
+      42,
+      draw_plan.Color(0.2, 0.4, 0.6, 1.0),
+      draw_plan.Color(0.0, 0.0, 0.0, 0.0),
+      0,
+    ),
+  ])
+}
+
+pub fn interaction_hit_test_accepts_inside_points_test() {
+  interaction.hit_test(interaction.region(10, 5, 8, 4), 12, 7)
+  |> should.equal(True)
+}
+
+pub fn interaction_begin_drag_captures_offsets_test() {
+  let session =
+    interaction.begin_drag(
+      interaction.idle_drag(),
+      interaction.region(18, 6, 44, 13),
+      20,
+      9,
+    )
+
+  session
+  |> should.equal(interaction.DragSession(True, 2, 3))
+}
+
+pub fn interaction_drag_to_returns_clamped_position_test() {
+  let session = interaction.DragSession(True, 2, 3)
+
+  interaction.drag_to(session, interaction.bounds(0, 4, 36, 11), 999, 999)
+  |> should.equal(interaction.DragRegion(36, 11, 0, 0))
+}
+
+pub fn interaction_clamp_region_preserves_size_test() {
+  interaction.clamp_region(
+    interaction.region(50, 20, 30, 12),
+    interaction.bounds(0, 4, 36, 11),
+  )
+  |> should.equal(interaction.DragRegion(36, 11, 30, 12))
 }
 
 pub fn fold_counts_nested_elements_test() {
@@ -184,8 +316,7 @@ pub fn plan_box_with_border_and_padding_test() {
 }
 
 pub fn plan_empty_children_test() {
-  let nodes =
-    ui.plan([ui.Column([ui.Width(10), ui.Height(5)], [])], 80, 24)
+  let nodes = ui.plan([ui.Column([ui.Width(10), ui.Height(5)], [])], 80, 24)
 
   nodes
   |> should.equal([ui.LayoutNode("Column", 0, 0, 10, 5, [])])
@@ -238,8 +369,7 @@ pub fn plan_nested_box_in_column_test() {
 }
 
 pub fn plan_text_defaults_to_parent_width_test() {
-  let nodes =
-    ui.plan([ui.Text([], "hello")], 80, 24)
+  let nodes = ui.plan([ui.Text([], "hello")], 80, 24)
 
   nodes
   |> should.equal([ui.LayoutNode("Text", 0, 0, 80, 1, [])])

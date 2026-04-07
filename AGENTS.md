@@ -65,6 +65,18 @@ Prefer adding reusable declarative building blocks in `opentui_ui` instead of so
 
 Imperative buffer drawing is still valid at the FFI/runtime edge, but it should increasingly become the implementation detail beneath pure UI descriptions rather than the primary authoring model.
 
+### FP migration guardrails
+
+When improving the repository toward more functional composability:
+
+- preserve all existing passing tests as a safety net
+- add tests for each new pure abstraction before migrating demos or widgets onto it
+- migrate one behavior or demo at a time instead of batching a large rewrite
+- run the full repo test suite after each meaningful migration step
+- prefer replacing imperative example logic with pure intermediate representations only when the new pure layer is itself reusable and testable
+
+Do not treat FP refactoring as permission to temporarily weaken test coverage. The goal is to make the codebase more composable **without** losing the behavioral guarantees already captured by the current test suite.
+
 ## Architectural Direction
 
 ### 1. Keep `opentui_core` mechanical
@@ -145,6 +157,8 @@ Use the repo-level helper scripts when useful:
 
 - `./scripts/build-all.sh`
 - `./scripts/test-all.sh`
+
+For larger composability refactors, prefer `./scripts/test-all.sh` as the default regression gate even if only one package was touched, unless there is a clear reason not to.
 
 ## Documentation Expectations
 

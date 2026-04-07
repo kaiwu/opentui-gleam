@@ -10,7 +10,7 @@ pub fn create_centers_panel_test() {
 pub fn begin_drag_sets_dragging_inside_panel_test() {
   let state = model.create(80, 24)
   let state = model.begin_drag(state, state.left + 1, state.top + 1)
-  state.dragging |> should.equal(True)
+  state.drag.active |> should.equal(True)
 }
 
 pub fn drag_to_clamps_to_bounds_test() {
@@ -25,7 +25,7 @@ pub fn end_drag_clears_dragging_test() {
   let state = model.create(80, 24)
   let state = model.begin_drag(state, state.left + 1, state.top + 1)
   let state = model.end_drag(state)
-  state.dragging |> should.equal(False)
+  state.drag.active |> should.equal(False)
 }
 
 pub fn step_rotation_changes_angles_when_enabled_test() {
