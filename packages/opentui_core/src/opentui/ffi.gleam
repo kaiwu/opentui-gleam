@@ -334,6 +334,42 @@ pub fn syntax_style_register(
   attributes: Int,
 ) -> Int
 
+@external(javascript, "./ffi_shim.js", "destroyFrameBuffer")
+pub fn destroy_frame_buffer(buffer: Int) -> Nil
+
+@external(javascript, "./ffi_shim.js", "drawFrameBuffer")
+pub fn draw_frame_buffer(
+  target: Int,
+  dest_x: Int,
+  dest_y: Int,
+  source: Int,
+  src_x: Int,
+  src_y: Int,
+  src_w: Int,
+  src_h: Int,
+) -> Nil
+
+@external(javascript, "./ffi_shim.js", "bufferResize")
+pub fn buffer_resize(buffer: Int, width: Int, height: Int) -> Nil
+
+@external(javascript, "./ffi_shim.js", "getBufferWidth")
+pub fn get_buffer_width(buffer: Int) -> Int
+
+@external(javascript, "./ffi_shim.js", "getBufferHeight")
+pub fn get_buffer_height(buffer: Int) -> Int
+
+/// Returns the number of encoded grapheme entries for the given text.
+@external(javascript, "./ffi_shim.js", "encodeUnicodeLength")
+pub fn encode_unicode_length(text: String, text_len: Int, width_method: Int) -> Int
+
+/// Returns the codepoint at the given index from the last encodeUnicode call.
+@external(javascript, "./ffi_shim.js", "encodeUnicodeCharAt")
+pub fn encode_unicode_char_at(index: Int) -> Int
+
+/// Returns the display width at the given index from the last encodeUnicode call.
+@external(javascript, "./ffi_shim.js", "encodeUnicodeWidthAt")
+pub fn encode_unicode_width_at(index: Int) -> Int
+
 @external(javascript, "./ffi_shim.js", "setLogCallback")
 pub fn set_log_callback(callback: fn(String) -> Nil) -> Nil
 

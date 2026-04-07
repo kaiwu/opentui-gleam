@@ -1,4 +1,4 @@
-import { dlopen, FFIType, suffix, ptr } from "bun:ffi"
+import { dlopen, FFIType, suffix, ptr, toArrayBuffer } from "bun:ffi"
 import { existsSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
@@ -321,6 +321,38 @@ const { symbols: raw } = dlopen(libPath, {
     returns: FFIType.u32,
   },
 
+  // === FrameBuffer ===
+  destroyFrameBuffer: {
+    args: [FFIType.ptr],
+    returns: FFIType.void,
+  },
+  drawFrameBuffer: {
+    args: [FFIType.ptr, FFIType.i32, FFIType.i32, FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32],
+    returns: FFIType.void,
+  },
+  bufferResize: {
+    args: [FFIType.ptr, FFIType.u32, FFIType.u32],
+    returns: FFIType.void,
+  },
+  getBufferWidth: {
+    args: [FFIType.ptr],
+    returns: FFIType.u32,
+  },
+  getBufferHeight: {
+    args: [FFIType.ptr],
+    returns: FFIType.u32,
+  },
+
+  // === Unicode ===
+  encodeUnicode: {
+    args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr, FFIType.u8],
+    returns: FFIType.bool,
+  },
+  freeUnicode: {
+    args: [FFIType.ptr, FFIType.u64],
+    returns: FFIType.void,
+  },
+
   // === Callbacks ===
   setLogCallback: {
     args: [FFIType.ptr],
@@ -388,6 +420,11 @@ export const editorViewSetViewport = raw.editorViewSetViewport
 export const bufferDrawEditorView = raw.bufferDrawEditorView
 export const createSyntaxStyle = raw.createSyntaxStyle
 export const destroySyntaxStyle = raw.destroySyntaxStyle
+export const destroyFrameBuffer = raw.destroyFrameBuffer
+export const drawFrameBuffer = raw.drawFrameBuffer
+export const bufferResize = raw.bufferResize
+export const getBufferWidth = raw.getBufferWidth
+export const getBufferHeight = raw.getBufferHeight
 
 // String-accepting: convert strings to Buffers
 
@@ -528,6 +565,49 @@ export function textBufferGetPlainTextAsString(buffer) {
 
 export function syntaxStyleRegister(style, name, nameLen, fg, bg, attributes) {
   return raw.syntaxStyleRegister(style, toBuf(name), nameLen, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
+}
+
+// Unicode encoding — stateful: encode stores results, then query by index
+let _encodedChars = []  // [{char, width}, ...]
+
+export function encodeUnicodeLength(text, textLen, widthMethod) {
+  _encodedChars = []
+  const textBuf = toBuf(text)
+  const outPtrSlot = new Float64Array(1)
+  const outLenSlot = new Float64Array(1)
+  const ok = raw.encodeUnicode(textBuf, textLen, outPtrSlot, outLenSlot, widthMethod)
+  if (!ok) {
+    return 0
+  }
+  const lenView = new DataView(outLenSlot.buffer)
+  const charsLen = Number(lenView.getBigUint64(0, true))
+  if (charsLen === 0) {
+    return 0
+  }
+  const ptrView = new DataView(outPtrSlot.buffer)
+  const charsPtrNum = Number(ptrView.getBigUint64(0, true))
+  // EncodedChar: extern struct { width: u8, char: u32 } = 8 bytes with padding
+  const byteLen = charsLen * 8
+  const ab = toArrayBuffer(charsPtrNum, 0, byteLen)
+  const view = new DataView(ab)
+  for (let i = 0; i < charsLen; i++) {
+    const base = i * 8
+    const width = view.getUint8(base)
+    const char = view.getUint32(base + 4, true)
+    _encodedChars.push({ char, width })
+  }
+  raw.freeUnicode(charsPtrNum, charsLen)
+  return charsLen
+}
+
+export function encodeUnicodeCharAt(index) {
+  if (index < 0 || index >= _encodedChars.length) return 0
+  return _encodedChars[index].char
+}
+
+export function encodeUnicodeWidthAt(index) {
+  if (index < 0 || index >= _encodedChars.length) return 0
+  return _encodedChars[index].width
 }
 
 // Callbacks — wrap to convert C-string args to JS strings
@@ -871,4 +951,45 @@ export function runRawInputLoop(renderer, onChunk, drawFn) {
     drawFn()
     raw.render(r, true)
   })
+}
+
+// Run an animated loop: tick callback receives dt in ms, plus key handling and draw.
+export function runAnimatedLoop(renderer, onKey, onTick, drawFn) {
+  const r = Number(renderer)
+  const parser = new DemoInputParser()
+  const cancelStartupRerenders = scheduleStartupRerenders(r, drawFn)
+
+  // Initial render
+  drawFn()
+  raw.render(r, true)
+
+  // Raw mode stdin
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true)
+  }
+  process.stdin.resume()
+
+  process.stdin.on("data", (chunk) => {
+    parser.push(chunk, (token) => {
+      if (token === "\x03" || token === "q") {
+        clearInterval(tickInterval)
+        cancelStartupRerenders()
+        cleanupAndExit(r)
+      }
+      onKey(token)
+    })
+    drawFn()
+    raw.render(r, true)
+  })
+
+  // Animation tick at ~30fps
+  let lastTime = Date.now()
+  const tickInterval = setInterval(() => {
+    const now = Date.now()
+    const dt = now - lastTime
+    lastTime = now
+    onTick(dt)
+    drawFn()
+    raw.render(r, true)
+  }, 33)
 }

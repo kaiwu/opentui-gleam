@@ -215,6 +215,43 @@ pub fn run_event_ui_demo_with_setup(
   )
 }
 
+pub fn run_animated_demo(
+  title: String,
+  term_title: String,
+  on_key: fn(String) -> Nil,
+  on_tick: fn(Float) -> Nil,
+  draw_body: fn(ffi.Buffer) -> Nil,
+) -> Nil {
+  let config =
+    renderer.RendererConfig(
+      width: term_w,
+      height: term_h,
+      screen_mode: renderer.AlternateScreen,
+      exit_on_ctrl_c: True,
+    )
+
+  let r = case renderer.create(config) {
+    Ok(r) -> r
+    Error(msg) -> {
+      runtime.log(msg)
+      panic as "Failed to create renderer"
+    }
+  }
+
+  renderer.setup(r, renderer.AlternateScreen)
+  renderer.set_title(r, term_title)
+  renderer.enable_mouse(r, False)
+
+  runtime.run_animated_loop(
+    ffi.renderer_to_int(r),
+    on_key,
+    on_tick,
+    fn() { render_static_frame(r, title, draw_body) },
+  )
+
+  Nil
+}
+
 pub fn run_stub_demo(
   title: String,
   term_title: String,

@@ -18,7 +18,8 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(echo \"exit: $?\")",
       "Bash(find /home/kaiwu/Documents/gitea/opentui-gleam/native/opentui-zig -name *Input* -o -name *input*)",
-      "Bash(grep -rn \"export fn.*edit_buffer\\\\|export fn.*EditBuffer\" native/opentui-zig/ --include=*.zig)"
+      "Bash(grep -rn \"export fn.*edit_buffer\\\\|export fn.*EditBuffer\" native/opentui-zig/ --include=*.zig)",
+      "Bash(grep:*)"
     ]
   }
 }

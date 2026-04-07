@@ -82,3 +82,40 @@ pub fn opaque_type_roundtrip_test() {
   let ss = ffi.syntax_style(55)
   ffi.syntax_style_to_int(ss) |> should.equal(55)
 }
+
+pub fn framebuffer_lifecycle_test() {
+  // A framebuffer is a buffer with respect_alpha=True
+  let fb = ffi.create_buffer(10, 8, True, 0, "fb_test", 7)
+  let _ = { fb > 0 } |> should.equal(True)
+  ffi.buffer_clear(fb, [0.0, 0.0, 0.0, 0.0])
+
+  // Can draw text on a framebuffer
+  ffi.buffer_draw_text(fb, "hi", 2, 2, 0, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0], 0)
+
+  // Compositing: draw fb onto another buffer
+  let target = ffi.create_buffer(20, 16, False, 0, "target", 6)
+  ffi.draw_frame_buffer(target, 0, 0, fb, 0, 0, 0, 0)
+
+  ffi.destroy_frame_buffer(fb)
+  ffi.destroy_buffer(target)
+}
+
+pub fn buffer_resize_test() {
+  let buf = ffi.create_buffer(10, 8, False, 0, "resize_t", 8)
+  let _ = ffi.get_buffer_width(buf) |> should.equal(10)
+  let _ = ffi.get_buffer_height(buf) |> should.equal(8)
+
+  ffi.buffer_resize(buf, 20, 12)
+  let _ = ffi.get_buffer_width(buf) |> should.equal(20)
+  let _ = ffi.get_buffer_height(buf) |> should.equal(12)
+  ffi.destroy_buffer(buf)
+}
+
+pub fn encode_unicode_ascii_test() {
+  let len = ffi.encode_unicode_length("AB", 2, 0)
+  let _ = len |> should.equal(2)
+  let _ = ffi.encode_unicode_char_at(0) |> should.equal(65)
+  let _ = ffi.encode_unicode_width_at(0) |> should.equal(1)
+  let _ = ffi.encode_unicode_char_at(1) |> should.equal(66)
+  ffi.encode_unicode_width_at(1) |> should.equal(1)
+}

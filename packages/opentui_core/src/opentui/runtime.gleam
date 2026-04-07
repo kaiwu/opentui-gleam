@@ -24,3 +24,11 @@ pub fn run_raw_input_loop(
   on_chunk: fn(String) -> Nil,
   draw_fn: fn() -> Nil,
 ) -> Nil
+
+@external(javascript, "./ffi_shim.js", "runAnimatedLoop")
+pub fn run_animated_loop(
+  renderer: Int,
+  on_key: fn(String) -> Nil,
+  on_tick: fn(Float) -> Nil,
+  draw_fn: fn() -> Nil,
+) -> Nil
