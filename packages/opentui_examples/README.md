@@ -188,8 +188,10 @@ the point.
   particle generator with presets, burst/auto/stop/clear controls, lifetimes,
   gravity-like motion, and live status, which preserves the upstream demo's
   core teaching value without the 3D/sprite-asset showcase stack.
-- [ ] `physx-planck-2d-demo`: make the physics simulation read more like a real
-  showcase demo instead of a thin moving-body sketch.
+- [x] `physx-planck-2d-demo`: now presents an interactive physics sandbox with
+  spawn, burst, auto-spawn, clear/reset, pause, visible bounds, and live
+  status, which preserves the upstream demo's core interactive physics value
+  without the 3D sprite/explosion showcase layer.
 - [ ] `physx-rapier-2d-demo`: preserve a clearly distinct second physics preset
   with stronger demo value, not just a minor variation.
 - [ ] `draggable-three-demo`: make mouse dragging the primary interaction so it
