@@ -141,13 +141,13 @@ way.
   lower it into buffer calls in one final pass.
 - [x] Add reusable pure interaction reducers in `packages/opentui_ui` for mouse
   dragging, hit testing, bounded movement, and viewport state transitions.
-- [ ] Add pure timeline / animation helpers in `packages/opentui_ui` or
+- [x] Add pure timeline / animation helpers in `packages/opentui_ui` or
   `packages/opentui_runtime` for common `tick` / `toggle` / `pause` /
   auto-advance / rate-limited spawn patterns.
 - [ ] Consolidate repeated demo-local state machine shapes into reusable,
   testable reducer-style helpers while keeping package dependencies flowing
   downward.
-- [ ] Evaluate whether wireframe / projected-scene planning should live in
+- [x] Evaluate whether wireframe / projected-scene planning should live in
   `packages/opentui_ui` as a pure intermediate representation, with clipping and
   raster planning tested independently from rendering.
 - [ ] Add tests for any new pure planning/reducer layers before migrating demos

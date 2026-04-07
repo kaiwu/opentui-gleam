@@ -3,8 +3,11 @@ import gleeunit
 import gleeunit/should
 import opentui/draw_plan
 import opentui/interaction
+import opentui/math3d.{Vec3}
 import opentui/text
+import opentui/timeline
 import opentui/ui
+import opentui/wireframe
 
 pub fn main() {
   gleeunit.main()
@@ -138,6 +141,38 @@ pub fn interaction_clamp_region_preserves_size_test() {
     interaction.bounds(0, 4, 36, 11),
   )
   |> should.equal(interaction.DragRegion(36, 11, 30, 12))
+}
+
+pub fn timeline_tick_below_period_has_no_firings_test() {
+  let result = timeline.tick(timeline.every(800.0), 300.0)
+  result
+  |> should.equal(timeline.TickResult(timeline.Interval(True, 800.0, 300.0), 0))
+}
+
+pub fn timeline_tick_over_period_counts_firings_test() {
+  let result = timeline.tick(timeline.every(800.0), 1700.0)
+  result
+  |> should.equal(timeline.TickResult(timeline.Interval(True, 800.0, 100.0), 2))
+}
+
+pub fn timeline_paused_tick_does_nothing_test() {
+  let result = timeline.tick(timeline.pause(timeline.every(800.0)), 1700.0)
+  result
+  |> should.equal(timeline.TickResult(timeline.Interval(False, 800.0, 0.0), 0))
+}
+
+pub fn timeline_toggle_flips_enabled_state_test() {
+  timeline.every(500.0)
+  |> timeline.toggle
+  |> timeline.is_enabled
+  |> should.equal(False)
+}
+
+pub fn timeline_reset_clears_elapsed_test() {
+  let timeline.TickResult(interval, _) =
+    timeline.tick(timeline.every(500.0), 300.0)
+  timeline.reset(interval)
+  |> should.equal(timeline.Interval(True, 500.0, 0.0))
 }
 
 pub fn fold_counts_nested_elements_test() {
@@ -423,4 +458,40 @@ pub fn plan_column_single_child_no_gap_test() {
       child |> should.equal(ui.LayoutNode("Text", 0, 0, 20, 1, []))
     _ -> panic as "expected column with single child"
   }
+}
+
+pub fn wireframe_project_mesh_preserves_vertex_count_test() {
+  let mesh =
+    wireframe.mesh(
+      [Vec3(-0.5, -0.5, 0.0), Vec3(0.5, -0.5, 0.0), Vec3(0.0, 0.5, 0.0)],
+      [wireframe.edge(0, 1), wireframe.edge(1, 2)],
+    )
+
+  wireframe.project_mesh(mesh, 0.0, 0.0, 0.0, 10.0, 20.0, 10.0)
+  |> should.equal([
+    wireframe.ProjectedVertex(15, 15, Vec3(-0.5, -0.5, 0.0)),
+    wireframe.ProjectedVertex(25, 15, Vec3(0.5, -0.5, 0.0)),
+    wireframe.ProjectedVertex(20, 5, Vec3(0.0, 0.5, 0.0)),
+  ])
+}
+
+pub fn wireframe_rasterize_clips_to_viewport_test() {
+  let mesh =
+    wireframe.mesh([Vec3(-0.5, 0.0, 0.0), Vec3(0.5, 0.0, 0.0)], [
+      wireframe.edge(0, 1),
+    ])
+  let projected = [
+    wireframe.ProjectedVertex(5, 5, Vec3(-0.5, 0.0, 0.0)),
+    wireframe.ProjectedVertex(8, 5, Vec3(0.5, 0.0, 0.0)),
+  ]
+
+  wireframe.rasterize(
+    mesh,
+    projected,
+    Vec3(0.0, 0.0, 1.0),
+    wireframe.viewport(5, 4, 3, 3),
+  )
+  |> should.equal([
+    wireframe.RasterCell(6, 5, 0xB7, 0.4, False),
+  ])
 }

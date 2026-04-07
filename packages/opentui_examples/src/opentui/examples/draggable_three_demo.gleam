@@ -1,4 +1,3 @@
-import gleam/float
 import gleam/int
 import gleam/list
 import opentui/draw_plan
@@ -8,9 +7,10 @@ import opentui/examples/phase4_state as state
 import opentui/examples/phase5_model as model
 import opentui/ffi
 import opentui/input
-import opentui/lighting
+import opentui/interaction
 import opentui/math3d.{type Vec3, Vec3}
 import opentui/renderer
+import opentui/wireframe
 
 pub fn main() -> Nil {
   let drag_state =
@@ -96,35 +96,33 @@ fn draw(buf: ffi.Buffer, drag_state: state.GenericCell) -> Nil {
   )
 
   let light_dir = math3d.vec3_normalize(Vec3(0.5, 0.8, 0.6))
+  let wireframe_mesh = to_wireframe_mesh(mesh)
   let projected =
-    list.map(mesh.vertices, fn(v) {
-      let rotated = math3d.rotate_euler(v, viewport.rot_x, viewport.rot_y, 0.0)
-      let #(sx, sy) =
-        math3d.project_simple(
-          rotated,
-          12.0,
-          int.to_float(viewport.left + viewport.width / 2),
-          int.to_float(viewport.top + viewport.height / 2),
-        )
-      #(float.truncate(sx), float.truncate(sy), rotated)
-    })
+    wireframe.project_mesh(
+      wireframe_mesh,
+      viewport.rot_x,
+      viewport.rot_y,
+      0.0,
+      12.0,
+      int.to_float(viewport.left + viewport.width / 2),
+      int.to_float(viewport.top + viewport.height / 2),
+    )
 
   draw_plan.render(
     buf,
-    plan_for_view(viewport, projected, mesh.edges, light_dir),
+    plan_for_view(viewport, wireframe_mesh, projected, light_dir),
   )
 }
 
 fn plan_for_view(
   viewport: model_state.DragState,
-  projected: List(#(Int, Int, Vec3)),
-  edges: List(model.Edge),
+  mesh: wireframe.Mesh3d,
+  projected: List(wireframe.ProjectedVertex),
   light_dir: Vec3,
 ) -> List(draw_plan.DrawOp) {
   draw_plan.concat([
     viewport_plan(viewport),
-    edge_plan(projected, edges, light_dir, viewport),
-    vertex_plan(projected, viewport),
+    wireframe_plan(viewport, mesh, projected, light_dir),
     [
       draw_plan.text(
         4,
@@ -146,10 +144,32 @@ fn plan_for_view(
   ])
 }
 
+fn wireframe_plan(
+  viewport: model_state.DragState,
+  mesh: wireframe.Mesh3d,
+  projected: List(wireframe.ProjectedVertex),
+  light_dir: Vec3,
+) -> List(draw_plan.DrawOp) {
+  wireframe.rasterize(
+    mesh,
+    projected,
+    light_dir,
+    wireframe.viewport(
+      viewport.left,
+      viewport.top,
+      viewport.width,
+      viewport.height,
+    ),
+  )
+  |> list.map(raster_cell_to_draw_op)
+}
+
 fn viewport_plan(viewport: model_state.DragState) -> List(draw_plan.DrawOp) {
-  let bg = case viewport.drag.active {
-    True -> draw_plan.Color(0.08, 0.11, 0.18, 1.0)
-    False -> draw_plan.Color(0.03, 0.05, 0.08, 1.0)
+  let bg = case viewport.drag {
+    interaction.DragSession(True, _, _) ->
+      draw_plan.Color(0.08, 0.11, 0.18, 1.0)
+    interaction.DragSession(False, _, _) ->
+      draw_plan.Color(0.03, 0.05, 0.08, 1.0)
   }
   draw_plan.concat([
     [
@@ -166,9 +186,9 @@ fn viewport_plan(viewport: model_state.DragState) -> List(draw_plan.DrawOp) {
       viewport.top,
       viewport.width,
       viewport.height,
-      case viewport.drag.active {
-        True -> color(common.accent_blue)
-        False -> color(common.border_fg)
+      case viewport.drag {
+        interaction.DragSession(True, _, _) -> color(common.accent_blue)
+        interaction.DragSession(False, _, _) -> color(common.border_fg)
       },
     ),
     [
@@ -182,75 +202,6 @@ fn viewport_plan(viewport: model_state.DragState) -> List(draw_plan.DrawOp) {
       ),
     ],
   ])
-}
-
-fn edge_plan(
-  projected: List(#(Int, Int, Vec3)),
-  edges: List(model.Edge),
-  light_dir: Vec3,
-  viewport: model_state.DragState,
-) -> List(draw_plan.DrawOp) {
-  case edges {
-    [] -> []
-    [edge, ..rest] -> {
-      let #(ax, ay, a_pos) = list_at(projected, edge.a)
-      let #(bx, by, b_pos) = list_at(projected, edge.b)
-      let mid = math3d.vec3_scale(math3d.vec3_add(a_pos, b_pos), 0.5)
-      let normal = math3d.vec3_normalize(mid)
-      let brightness = lighting.diffuse(normal, light_dir) *. 0.6 +. 0.4
-      let points = model.line_points(ax, ay, bx, by)
-      let char = model.shade_char(brightness)
-      let edge_color =
-        draw_plan.Color(brightness *. 0.4, brightness *. 0.7, brightness, 1.0)
-      draw_plan.concat([
-        point_plan(points, char, edge_color, viewport),
-        edge_plan(projected, rest, light_dir, viewport),
-      ])
-    }
-  }
-}
-
-fn vertex_plan(
-  projected: List(#(Int, Int, Vec3)),
-  viewport: model_state.DragState,
-) -> List(draw_plan.DrawOp) {
-  case projected {
-    [] -> []
-    [#(x, y, _), ..rest] -> {
-      let head = case in_viewport(viewport, x, y) {
-        True -> [
-          draw_plan.cell(
-            x,
-            y,
-            0x25CF,
-            color(common.accent_orange),
-            transparent(),
-            0,
-          ),
-        ]
-        False -> []
-      }
-      draw_plan.concat([head, vertex_plan(rest, viewport)])
-    }
-  }
-}
-
-fn point_plan(
-  points: List(#(Int, Int)),
-  char: Int,
-  fg: draw_plan.Color,
-  viewport: model_state.DragState,
-) -> List(draw_plan.DrawOp) {
-  case points {
-    [] -> []
-    [#(x, y), ..rest] -> {
-      let head = case in_viewport(viewport, x, y) {
-        True -> [draw_plan.cell(x, y, char, fg, transparent(), 0)]
-        False -> []
-      }
-      draw_plan.concat([head, point_plan(rest, char, fg, viewport)])
-    }
-  }
 }
 
 fn rect_outline_plan(
@@ -318,19 +269,35 @@ fn vertical_border_plan_loop(
   }
 }
 
-fn in_viewport(viewport: model_state.DragState, x: Int, y: Int) -> Bool {
-  x > viewport.left
-  && x < viewport.left + viewport.width - 1
-  && y > viewport.top
-  && y < viewport.top + viewport.height - 1
+fn raster_cell_to_draw_op(cell: wireframe.RasterCell) -> draw_plan.DrawOp {
+  case cell {
+    wireframe.RasterCell(x, y, codepoint, _, True) ->
+      draw_plan.cell(
+        x,
+        y,
+        codepoint,
+        color(common.accent_orange),
+        transparent(),
+        0,
+      )
+    wireframe.RasterCell(x, y, codepoint, brightness, False) ->
+      draw_plan.cell(
+        x,
+        y,
+        codepoint,
+        draw_plan.Color(brightness *. 0.4, brightness *. 0.7, brightness, 1.0),
+        transparent(),
+        0,
+      )
+  }
 }
 
-fn list_at(items: List(a), index: Int) -> a {
-  case items, index {
-    [item, ..], 0 -> item
-    [_, ..rest], n -> list_at(rest, n - 1)
-    [], _ -> panic as "list_at: index out of bounds"
-  }
+fn to_wireframe_mesh(mesh: model.Mesh3D) -> wireframe.Mesh3d {
+  wireframe.mesh(
+    mesh.vertices,
+    mesh.edges
+      |> list.map(fn(edge) { wireframe.edge(edge.a, edge.b) }),
+  )
 }
 
 fn color(tuple: #(Float, Float, Float, Float)) -> draw_plan.Color {
