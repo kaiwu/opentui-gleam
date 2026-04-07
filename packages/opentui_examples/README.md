@@ -192,7 +192,9 @@ the point.
   spawn, burst, auto-spawn, clear/reset, pause, visible bounds, and live
   status, which preserves the upstream demo's core interactive physics value
   without the 3D sprite/explosion showcase layer.
-- [ ] `physx-rapier-2d-demo`: preserve a clearly distinct second physics preset
-  with stronger demo value, not just a minor variation.
+- [x] `physx-rapier-2d-demo`: now presents a distinct mixed-shape, high-bounce
+  crate arena with auto-spawn, burst, clear/reset, pause, and live status,
+  which preserves the upstream demo's second-physics-showcase value without the
+  3D sprite/explosion layer.
 - [ ] `draggable-three-demo`: make mouse dragging the primary interaction so it
   better matches the upstream demo's core purpose.
