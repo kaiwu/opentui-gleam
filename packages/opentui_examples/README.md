@@ -184,8 +184,10 @@ the point.
   semantics with pause/step/speed/reset controls, visible frame-strip status,
   and a state-driven active sprite, which preserves the upstream demo's core
   teaching value without the 3D-specific showcase extras.
-- [ ] `sprite-particle-generator-demo`: strengthen the particle-system demo so
-  it demonstrates the upstream idea more clearly, even if it stays simpler.
+- [x] `sprite-particle-generator-demo`: now demonstrates a controllable
+  particle generator with presets, burst/auto/stop/clear controls, lifetimes,
+  gravity-like motion, and live status, which preserves the upstream demo's
+  core teaching value without the 3D/sprite-asset showcase stack.
 - [ ] `physx-planck-2d-demo`: make the physics simulation read more like a real
   showcase demo instead of a thin moving-body sketch.
 - [ ] `physx-rapier-2d-demo`: preserve a clearly distinct second physics preset
