@@ -1,63 +1,59 @@
 import gleam/int
+import gleam/list
 import opentui/examples/common
 import opentui/examples/phase2_model as model
-import opentui/examples/phase2_state as state
+import opentui/examples/phase4_state as state
 import opentui/ui
+import opentui/widgets
 
 pub fn main() -> Nil {
-  let offset = state.create_int(0)
+  let ss = state.create_generic(widgets.scroll_state(8)
+    |> widgets.set_content_height(16))
 
   common.run_interactive_ui_demo(
     "Scroll Example",
     "Scroll Example",
-    fn(key) { handle_key(offset, key) },
-    fn() { view(offset) },
+    fn(key) { handle_key(ss, key) },
+    fn() { view(ss) },
   )
 }
 
-fn handle_key(offset: state.IntCell, raw: String) -> Nil {
-  state.set_int(
-    offset,
-    model.adjust_scroll(
-      state.get_int(offset),
-      model.parse_key(raw),
-      model.max_scroll_offset(16, 8),
-    ),
-  )
+fn handle_key(ss: state.GenericCell, raw: String) -> Nil {
+  let s: widgets.ScrollState = state.get_generic(ss)
+  let new_s = case model.parse_key(raw) {
+    model.ArrowUp -> widgets.scroll_up(s, 1)
+    model.ArrowDown -> widgets.scroll_down(s, 1)
+    model.Home -> widgets.scroll_to(s, 0)
+    model.End -> widgets.scroll_to(s, s.content_height)
+    _ -> s
+  }
+  state.set_generic(ss, new_s)
 }
 
-fn view(offset: state.IntCell) -> List(ui.Element) {
-  let scroll = state.get_int(offset)
+fn view(ss: state.GenericCell) -> List(ui.Element) {
+  let s: widgets.ScrollState = state.get_generic(ss)
+
+  let rows = list.map(entries(), common.line)
 
   [
     common.panel("Scrollable list", 2, 3, 48, 18, [
-      ui.Column(
-        [ui.Gap(1)],
-        list_lines(model.visible_lines(entries(), scroll, 8)),
-      ),
+      widgets.scroll_view([ui.Gap(1)], s, rows),
     ]),
     common.panel("Scroll state", 54, 3, 24, 18, [
       ui.Column([ui.Gap(1)], [
         common.line_with(
           [ui.Attributes(1)],
-          "Offset: " <> int.to_string(scroll),
+          "Offset: " <> int.to_string(s.offset),
         ),
         common.line("Visible rows: 8"),
         common.line("Total rows: 16"),
         ui.Spacer(1),
         common.paragraph(
-          "Up/Down, Home, and End are backed by a pure scroll reducer so later scroll widgets can inherit the same clamping rules.",
+          "Now backed by widgets.ScrollState from opentui_ui. Up/Down scroll, Home/End jump to bounds.",
         ),
       ]),
     ]),
   ]
-}
-
-fn list_lines(lines: List(String)) -> List(ui.Element) {
-  case lines {
-    [] -> []
-    [line, ..rest] -> [common.line(line), ..list_lines(rest)]
-  }
 }
 
 fn entries() -> List(String) {

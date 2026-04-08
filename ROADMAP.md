@@ -385,12 +385,18 @@ Concrete work items derived from auditing the codebase against the roadmap above
 
 ### Phase 4 — Expand demos into a real showcase ecosystem
 
-- [x] 57 registered demos, all marked done across 5 phases
+- [x] 59 registered demos, all marked done across 5 phases
 - [x] Shared infrastructure in `common.gleam` (462 lines, 8+ harness functions)
 - [x] Phase-specific model modules extracted (phase2/3/4/5_model.gleam)
-- [x] 71 total .gleam files in examples directory
-- [ ] Migrate demos that still hand-roll layout/widgets onto Phase 3 UI abstractions as they land (Row, ScrollView, TextInput, Select)
-- [ ] Add app-like demos that compose multiple widgets (e.g. a file browser, a settings panel) to prove the UI layer works for real applications
+- [x] 73 total .gleam files in examples directory
+- [x] Migrate demos onto Phase 3 UI abstractions:
+  - [x] `scroll_example` → `widgets.ScrollState` + `widgets.scroll_view` via `GenericCell`
+  - [x] `tab_select_demo` → `widgets.TabState` + `widgets.tab_bar` via `GenericCell`
+  - [x] `split_mode_demo` → `interaction.FocusGroup` via `GenericCell`
+  - [x] `input_select_layout_demo` → `interaction.FocusGroup` via `GenericCell`
+- [x] Add app-like demos composing multiple widgets:
+  - [x] `file_browser_demo` — dual-pane browser composing `SelectState`, `ScrollState`, `FocusGroup`
+  - [x] `settings_panel_demo` — tabbed settings composing `TabState`, `InputState`, `SelectState`, `FocusGroup`
 
 ### Phase 5 — Add testing and optional advanced packages
 

@@ -3,13 +3,15 @@ import opentui/edit_buffer
 import opentui/examples/common
 import opentui/examples/phase2_model
 import opentui/examples/phase2_state as state
+import opentui/examples/phase4_state as gstate
 import opentui/ffi
+import opentui/interaction
 import opentui/ui
 
 const options = ["Red", "Green", "Blue", "Yellow", "Purple"]
 
 pub fn main() -> Nil {
-  let focus_area = state.create_int(0)
+  let focus = gstate.create_generic(interaction.focus_group(2))
   let selected = state.create_int(0)
   let focused_opt = state.create_int(0)
   let eb = edit_buffer.create(0)
@@ -17,26 +19,26 @@ pub fn main() -> Nil {
   common.run_interactive_ui_demo(
     "Input Select Layout Demo",
     "Input Select Layout Demo",
-    fn(key) { handle_key(focus_area, selected, focused_opt, eb, key) },
-    fn() { view(focus_area, selected, focused_opt, eb) },
+    fn(key) { handle_key(focus, selected, focused_opt, eb, key) },
+    fn() { view(focus, selected, focused_opt, eb) },
   )
 }
 
 fn handle_key(
-  focus_area: state.IntCell,
+  focus: gstate.GenericCell,
   selected: state.IntCell,
   focused_opt: state.IntCell,
   eb: ffi.EditBuffer,
   raw: String,
 ) -> Nil {
   let key = phase2_model.parse_key(raw)
+  let fg: interaction.FocusGroup = gstate.get_generic(focus)
   case key {
-    phase2_model.Tab ->
-      state.set_int(focus_area, { state.get_int(focus_area) + 1 } % 2)
+    phase2_model.Tab -> gstate.set_generic(focus, interaction.focus_next(fg))
     phase2_model.ShiftTab ->
-      state.set_int(focus_area, { state.get_int(focus_area) + 1 } % 2)
+      gstate.set_generic(focus, interaction.focus_prev(fg))
     _ ->
-      case state.get_int(focus_area) {
+      case fg.focused {
         0 -> handle_input_key(eb, key, raw)
         _ -> handle_select_key(selected, focused_opt, key)
       }
@@ -80,20 +82,20 @@ fn handle_select_key(
 }
 
 fn view(
-  focus_area: state.IntCell,
+  focus: gstate.GenericCell,
   selected: state.IntCell,
   focused_opt: state.IntCell,
   eb: ffi.EditBuffer,
 ) -> List(ui.Element) {
-  let area = state.get_int(focus_area)
+  let fg: interaction.FocusGroup = gstate.get_generic(focus)
   let sel = state.get_int(selected)
   let foc = state.get_int(focused_opt)
   let text = edit_buffer.text(eb)
   let #(_row, col) = edit_buffer.cursor(eb)
 
-  let input_border = case area {
-    0 -> common.accent_blue
-    _ -> common.border_fg
+  let input_border = case interaction.is_focused(fg, 0) {
+    True -> common.accent_blue
+    False -> common.border_fg
   }
   [
     common.panel_with_background("Input", 2, 3, 76, 5, common.panel_bg, [
@@ -106,18 +108,18 @@ fn view(
           ],
           [],
         ),
-        common.line(render_input(text, col, area == 0)),
+        common.line(render_input(text, col, interaction.is_focused(fg, 0))),
       ]),
     ]),
     common.panel_with_background("Select Color", 2, 9, 38, 12, common.panel_bg, [
       ui.Column(
         [ui.Gap(0)],
-        select_items(foc, sel, area == 1),
+        select_items(foc, sel, interaction.is_focused(fg, 1)),
       ),
     ]),
     common.panel("Status", 42, 9, 36, 12, [
       ui.Column([ui.Gap(1)], [
-        common.line("Focus: " <> focus_label(area)),
+        common.line("Focus: " <> focus_label(fg.focused)),
         common.line("Input: " <> text),
         common.line("Color: " <> nth_option(sel)),
         ui.Spacer(1),
@@ -197,4 +199,3 @@ fn nth_or(items: List(String), index: Int, default: String) -> String {
     [_, ..rest], _ -> nth_or(rest, index - 1, default)
   }
 }
-

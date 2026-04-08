@@ -1,30 +1,33 @@
 import opentui/examples/common
 import opentui/examples/phase2_model as model
 import opentui/examples/phase2_state as state
+import opentui/examples/phase4_state as gstate
+import opentui/interaction
 import opentui/ui
 
 pub fn main() -> Nil {
   let divider = state.create_int(32)
-  let focused = state.create_int(0)
+  let focus = gstate.create_generic(interaction.focus_group(2))
 
   common.run_interactive_ui_demo(
     "Split Mode Demo",
     "Split Mode Demo",
-    fn(key) { handle_key(divider, focused, key) },
-    fn() { view(divider, focused) },
+    fn(key) { handle_key(divider, focus, key) },
+    fn() { view(divider, focus) },
   )
 }
 
 fn handle_key(
   divider: state.IntCell,
-  focused: state.IntCell,
+  focus: gstate.GenericCell,
   raw: String,
 ) -> Nil {
   let parsed = model.parse_key(raw)
+  let fg: interaction.FocusGroup = gstate.get_generic(focus)
 
   case parsed {
-    model.Tab | model.ShiftTab ->
-      state.set_int(focused, model.navigate(state.get_int(focused), 2, parsed))
+    model.Tab -> gstate.set_generic(focus, interaction.focus_next(fg))
+    model.ShiftTab -> gstate.set_generic(focus, interaction.focus_prev(fg))
     model.ArrowLeft | model.ArrowRight | model.Home | model.End ->
       state.set_int(
         divider,
@@ -34,25 +37,25 @@ fn handle_key(
   }
 }
 
-fn view(divider: state.IntCell, focused: state.IntCell) -> List(ui.Element) {
+fn view(divider: state.IntCell, focus: gstate.GenericCell) -> List(ui.Element) {
   let left_width = state.get_int(divider)
   let right_x = 3 + left_width
   let right_width = 75 - left_width
-  let active = state.get_int(focused)
+  let fg: interaction.FocusGroup = gstate.get_generic(focus)
 
   [
-    pane("Primary pane", 2, left_width, active == 0, [
+    pane("Primary pane", 2, left_width, interaction.is_focused(fg, 0), [
       common.line("Tab switches active pane"),
       common.line("Left/Right resize split"),
       common.paragraph(
-        "This is a manual multi-region layout built on the current buffer/ui stack while true split terminal modes are still pending in the runtime.",
+        "Focus switching now uses interaction.FocusGroup from opentui_ui with wrap-around navigation.",
       ),
     ]),
-    pane("Secondary pane", right_x, right_width, active == 1, [
+    pane("Secondary pane", right_x, right_width, interaction.is_focused(fg, 1), [
       common.line("Focused pane is highlighted"),
       common.line("Current divider is preserved"),
       common.paragraph(
-        "The shared split reducer is now frozen in tests so future runtime-backed split modes can keep the same keyboard semantics.",
+        "The shared split reducer is frozen in tests. FocusGroup provides reusable focus management.",
       ),
     ]),
   ]

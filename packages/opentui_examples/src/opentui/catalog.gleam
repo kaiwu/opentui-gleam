@@ -286,6 +286,16 @@ pub fn demos() -> List(Demo) {
       "opentui/examples/opentui_demo",
       "Implemented multi-panel ecosystem showcase with live stats, fractal, cube, and unicode.",
     ),
+    done(
+      "file-browser-demo",
+      "opentui/examples/file_browser_demo",
+      "Dual-pane file browser composing SelectState, ScrollState, and FocusGroup widgets.",
+    ),
+    done(
+      "settings-panel-demo",
+      "opentui/examples/settings_panel_demo",
+      "Tabbed settings panel composing TabState, InputState, SelectState, and FocusGroup widgets.",
+    ),
   ]
 }
 
