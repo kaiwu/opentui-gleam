@@ -344,3 +344,62 @@ If packaging started soon, the realistic order would be:
 6. optional `opentui_examples`
 
 That order matches the current codebase maturity and keeps the published story honest.
+
+## Execution Plan
+
+Concrete work items derived from auditing the codebase against the roadmap above (2026-04-08). Each phase lists remaining work only — completed items are checked off.
+
+### Phase 1 — Stabilize the binding foundation
+
+- [x] `ffi.gleam` stable (72 @external declarations, 6 clean opaque handle types)
+- [x] `ffi_shim.js` stable (native loading with multi-strategy resolution)
+- [x] No upward imports from core to runtime, dependency flow is clean
+- [x] Build scripts: `build-all.sh`, `build-native.sh`, npm prebuilt route all working
+- [ ] Move `opentui_core/src/opentui/runtime.gleam` to `opentui_runtime` — it contains runtime orchestration APIs (event loops, demo loops) that belong in the wrapper layer, not the raw FFI layer
+- [ ] Add JSDoc comment in `ffi_shim.js` documenting that the `_encodedChars` Unicode cache is single-threaded/sync-only
+
+### Phase 2 — Fill in runtime coverage
+
+- [x] `text_buffer.gleam` — all 6 FFI functions wrapped with safe API
+- [x] `input.gleam` — comprehensive keyboard, mouse, hit-grid, event loop support (95 lines)
+- [x] Hit-grid helpers — `clear_hit_grid()`, `add_hit_region()`, `hit_at()` wrapped in `input.gleam`
+- [ ] `editor_view.gleam` — deepen beyond the current 3 functions; add viewport management helpers, cursor positioning, selection handling, scroll state
+- [ ] `syntax_style.gleam` — add style composition helpers and higher-level styling patterns beyond raw `register()`
+- [ ] Create `clipboard.gleam` — wrap `copy_to_clipboard_osc52` from FFI with byte-size handling
+- [ ] Create `callbacks.gleam` — wrap `set_log_callback` and `set_event_callback` with ergonomic Gleam API
+- [ ] Higher-level input/event model — an abstraction above raw demo loops so apps can compose event handling without reimplementing the loop pattern
+
+### Phase 3 — Build Gleam-native UI abstractions
+
+- [x] `ui.gleam` — 818 lines, core rendering pipeline with Box, Column, Text, Paragraph, Spacer
+- [x] `wireframe.gleam` — 218 lines, complete 3D mesh rasterizer
+- [x] `draw_plan.gleam`, `interaction.gleam`, `timeline.gleam`, `simulation.gleam`, `frame_playback.gleam` — partial but functional helpers
+- [ ] Add `Row` element to `ui.gleam` — horizontal layout is completely missing, only vertical (Column) exists
+- [ ] Add scrolling/viewport container — demos currently manage scroll offset manually via state cells; extract into a reusable `ScrollView` element or helper
+- [ ] Add `TextInput` widget — currently hand-rolled per demo using `edit_buffer` from runtime
+- [ ] Add `Select` widget — demos build selects manually with Column + Text + external selection state
+- [ ] Add `TabBar` widget — no tab switching control exists
+- [ ] Add `CodeView` / line-number widget — code/diff rendering currently uses `editor_view` from runtime with no UI-layer abstraction
+- [ ] Deepen `interaction.gleam` — currently only drag region/session; needs keyboard focus, event routing, interaction state machines
+- [ ] Deepen `draw_plan.gleam` — only 3 operation types (FillRect, Text, Cell); underused vs. `ui.render_all()`
+
+### Phase 4 — Expand demos into a real showcase ecosystem
+
+- [x] 57 registered demos, all marked done across 5 phases
+- [x] Shared infrastructure in `common.gleam` (462 lines, 8+ harness functions)
+- [x] Phase-specific model modules extracted (phase2/3/4/5_model.gleam)
+- [x] 71 total .gleam files in examples directory
+- [ ] Migrate demos that still hand-roll layout/widgets onto Phase 3 UI abstractions as they land (Row, ScrollView, TextInput, Select)
+- [ ] Add app-like demos that compose multiple widgets (e.g. a file browser, a settings panel) to prove the UI layer works for real applications
+
+### Phase 5 — Add testing and optional advanced packages
+
+- [x] 352 test functions across 30 test files (10 core, 95 runtime, 40 ui, 206 examples)
+- [x] 3D capabilities implemented in `math3d.gleam`, `lighting.gleam`, `wireframe.gleam` — functional but not extracted
+- [ ] Create `opentui_testing` package with:
+  - [ ] Test renderer (headless renderer that captures draw calls without a terminal)
+  - [ ] Synthetic key/mouse input helpers (generate input events programmatically)
+  - [ ] Frame snapshot helpers (capture and compare rendered output)
+  - [ ] Demo/widget verification harness
+- [ ] Extract `opentui_3d` package — move `math3d.gleam`, `lighting.gleam` from runtime and `wireframe.gleam` from ui into a standalone optional package
+- [ ] Prepare packages for Hex.pm publishing — verify each package has clean `gleam.toml` metadata, README, license, and stable public API surface
