@@ -21,7 +21,9 @@
       "Bash(grep -rn \"export fn.*edit_buffer\\\\|export fn.*EditBuffer\" native/opentui-zig/ --include=*.zig)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(wc -l /home/kaiwu/Documents/gitea/opentui-gleam/packages/*/src/opentui/*.gleam)"
+      "Bash(wc -l /home/kaiwu/Documents/gitea/opentui-gleam/packages/*/src/opentui/*.gleam)",
+      "Bash(npm install:*)",
+      "Bash(/home/kaiwu/Documents/gitea/opentui-gleam/scripts/test-all.sh)"
     ]
   }
 }

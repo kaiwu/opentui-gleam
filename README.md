@@ -60,52 +60,67 @@ Current dependency flow:
 - `opentui_ui` → `opentui_core`, `opentui_runtime`
 - `opentui_examples` → `opentui_core`, `opentui_runtime`, `opentui_ui`
 
-## Native library resolution
+## Getting started
 
-`opentui_core` resolves the native library in this order:
+After cloning, the native `libopentui` shared library must be available before anything will run. There are two ways to get it.
 
-1. submodule build output under `native/opentui-zig/packages/core/src/zig/lib/<target>/`
-2. submodule fallback under `.../zig-out/lib/`
-3. platform-native npm package under `node_modules/@opentui/core-<platform>-<arch>/`
+### Prerequisites
 
-Inside `packages/opentui_core`, run:
+- [Gleam](https://gleam.run) >= 1.15
+- [Bun](https://bun.sh) (the JS runtime used by the Gleam JS target)
+- One of the two native library options below
+
+### Option A — npm prebuilt (easiest)
+
+Prebuilt binaries are published to npm. Install them inside `opentui_core`:
 
 ```bash
+cd packages/opentui_core
 npm install
 ```
 
-to install the matching optional prebuilt native package for the current machine.
+This pulls the platform-specific `@opentui/core-<platform>-<arch>` package into `packages/opentui_core/node_modules/`. The FFI shim knows how to find the library there, even when running from other packages like `opentui_examples`.
 
-## Common commands
+### Option B — build from submodule
 
-Build everything:
+If you need a newer build or your platform has no prebuilt package, build the Zig shared library from source. This requires [Zig](https://ziglang.org) 0.15.2.
 
 ```bash
-./scripts/build-all.sh
+git submodule update --init --recursive
+./scripts/build-native.sh
 ```
 
-Test everything:
+The script runs `zig build` inside `native/opentui-zig/packages/core/src/zig/` and places the output under `.../lib/<arch>-<os>/libopentui.so` (or `.dylib` / `.dll`).
+
+### Build and test
+
+Once the native library is available through either option:
 
 ```bash
-./scripts/test-all.sh
+./scripts/build-all.sh   # builds all four packages
+./scripts/test-all.sh    # runs all tests
 ```
 
-Run the examples package catalog:
+`build-all.sh` will automatically run `build-native.sh` if the submodule is present and no npm prebuilt is installed.
+
+You can also build or test a single package:
 
 ```bash
-(cd packages/opentui_examples && gleam run)
-
-# or from the project root
-./scripts/run-example.sh catalog
+cd packages/opentui_core && gleam test
+cd packages/opentui_runtime && gleam test
 ```
 
-Run a specific demo:
+### Run demos
 
 ```bash
-(cd packages/opentui_examples && gleam run -m opentui/examples/editor)
+./scripts/run-example.sh catalog   # list all demos
+./scripts/run-example.sh editor    # run a specific demo
+```
 
-# or from the project root
-./scripts/run-example.sh editor
+Or directly:
+
+```bash
+cd packages/opentui_examples && gleam run -m opentui/examples/editor
 ```
 
 Available root-level example names:

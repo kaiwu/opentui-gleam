@@ -15,45 +15,49 @@ const os = osMap[process.platform] || process.platform
 const targetDir = `${arch}-${os}`
 const npmPackageSuffix = `${process.platform}-${process.arch}`
 
-function resolveProjectRoot() {
-  const candidates = [process.cwd()]
-  let current = __dirname
+function collectBaseDirs() {
+  const dirs = new Set()
+  dirs.add(process.cwd())
 
+  let current = __dirname
   for (let i = 0; i < 8; i += 1) {
-    candidates.push(current)
+    dirs.add(current)
     const parent = join(current, "..")
-    if (parent === current) {
-      break
-    }
+    if (parent === current) break
     current = parent
   }
 
-  for (const candidate of candidates) {
-    const hasGleamToml = existsSync(join(candidate, "gleam.toml"))
-    const hasSubmodule = existsSync(join(candidate, "native", "opentui-zig")) || existsSync(join(candidate, "..", "..", "native", "opentui-zig"))
-    const hasNativePackages = existsSync(join(candidate, "node_modules", "@opentui"))
-
-    if (hasGleamToml && (hasSubmodule || hasNativePackages)) {
-      return candidate
-    }
-  }
-
-  throw new Error("Could not locate opentui-gleam project root for FFI loading")
+  return [...dirs]
 }
 
 function resolveNativeLibraryPath() {
-  const root = resolveProjectRoot()
-  const submoduleCandidates = [
-    join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
-    join(root, "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
-    join(root, "..", "..", "native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, `libopentui.${suffix}`),
-    join(root, "..", "..", "native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", `libopentui.${suffix}`),
-  ]
-  const npmCandidates = [
-    join(root, "node_modules", "@opentui", `core-${npmPackageSuffix}`, `libopentui.${suffix}`),
-    join(root, "node_modules", "@opentui", `core-${npmPackageSuffix}`, `opentui.${suffix}`),
-  ]
-  const candidates = [...submoduleCandidates, ...npmCandidates]
+  const baseDirs = collectBaseDirs()
+  const libName = `libopentui.${suffix}`
+  const altLibName = `opentui.${suffix}`
+  const npmPkg = `@opentui/core-${npmPackageSuffix}`
+  const submoduleLib = join("native", "opentui-zig", "packages", "core", "src", "zig", "lib", targetDir, libName)
+  const submoduleZigOut = join("native", "opentui-zig", "packages", "core", "src", "zig", "zig-out", "lib", libName)
+
+  const candidates = []
+
+  for (const base of baseDirs) {
+    // Submodule: directly under this dir
+    candidates.push(join(base, submoduleLib))
+    candidates.push(join(base, submoduleZigOut))
+    // Submodule: monorepo root (two levels up from packages/X/)
+    candidates.push(join(base, "..", "..", submoduleLib))
+    candidates.push(join(base, "..", "..", submoduleZigOut))
+
+    // NPM: node_modules in this dir
+    candidates.push(join(base, "node_modules", npmPkg, libName))
+    candidates.push(join(base, "node_modules", npmPkg, altLibName))
+    // NPM: monorepo root node_modules (two levels up from packages/X/)
+    candidates.push(join(base, "..", "..", "node_modules", npmPkg, libName))
+    candidates.push(join(base, "..", "..", "node_modules", npmPkg, altLibName))
+    // NPM: sibling opentui_core package (for monorepo consumers like opentui_examples)
+    candidates.push(join(base, "..", "opentui_core", "node_modules", npmPkg, libName))
+    candidates.push(join(base, "..", "opentui_core", "node_modules", npmPkg, altLibName))
+  }
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
