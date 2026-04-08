@@ -355,8 +355,8 @@ Concrete work items derived from auditing the codebase against the roadmap above
 - [x] `ffi_shim.js` stable (native loading with multi-strategy resolution)
 - [x] No upward imports from core to runtime, dependency flow is clean
 - [x] Build scripts: `build-all.sh`, `build-native.sh`, npm prebuilt route all working
-- [ ] Move `opentui_core/src/opentui/runtime.gleam` to `opentui_runtime` — it contains runtime orchestration APIs (event loops, demo loops) that belong in the wrapper layer, not the raw FFI layer
-- [ ] Add JSDoc comment in `ffi_shim.js` documenting that the `_encodedChars` Unicode cache is single-threaded/sync-only
+- [x] Move `opentui_core/src/opentui/runtime.gleam` to `opentui_runtime` — raw @externals added to `ffi.gleam`, wrapper in `opentui_runtime/runtime.gleam` now accepts type-safe `Renderer` instead of raw `Int`
+- [x] Add JSDoc comment in `ffi_shim.js` documenting that the `_encodedChars` Unicode cache is single-threaded/sync-only
 
 ### Phase 2 — Fill in runtime coverage
 

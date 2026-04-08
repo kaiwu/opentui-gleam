@@ -23,7 +23,8 @@
       "Bash(ls:*)",
       "Bash(wc -l /home/kaiwu/Documents/gitea/opentui-gleam/packages/*/src/opentui/*.gleam)",
       "Bash(npm install:*)",
-      "Bash(/home/kaiwu/Documents/gitea/opentui-gleam/scripts/test-all.sh)"
+      "Bash(/home/kaiwu/Documents/gitea/opentui-gleam/scripts/test-all.sh)",
+      "Bash(./scripts/test-all.sh)"
     ]
   }
 }

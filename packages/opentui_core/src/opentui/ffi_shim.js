@@ -571,7 +571,11 @@ export function syntaxStyleRegister(style, name, nameLen, fg, bg, attributes) {
   return raw.syntaxStyleRegister(style, toBuf(name), nameLen, toFloat32Buf(fg), toFloat32Buf(bg), attributes)
 }
 
-// Unicode encoding — stateful: encode stores results, then query by index
+// Unicode encoding — stateful: encode stores results, then query by index.
+// WARNING: _encodedChars is module-global mutable state. This is safe only in
+// single-threaded synchronous usage (one encodeUnicodeLength call, then
+// encodeUnicodeCharAt/WidthAt queries, before the next encode call).
+// Do not interleave concurrent encode sequences.
 let _encodedChars = []  // [{char, width}, ...]
 
 export function encodeUnicodeLength(text, textLen, widthMethod) {

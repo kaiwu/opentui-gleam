@@ -60,8 +60,7 @@ pub fn run_static_demo(
   renderer.set_title(r, term_title)
   renderer.enable_mouse(r, False)
 
-  let r_int = ffi.renderer_to_int(r)
-  runtime.run_demo_loop(r_int, fn() { render_static_frame(r, title, draw_body) })
+  runtime.run_demo_loop(r, fn() { render_static_frame(r, title, draw_body) })
 
   Nil
 }
@@ -243,7 +242,7 @@ pub fn run_animated_demo(
   renderer.enable_mouse(r, False)
 
   runtime.run_animated_loop(
-    ffi.renderer_to_int(r),
+    r,
     on_key,
     on_tick,
     fn() { render_static_frame(r, title, draw_body) },

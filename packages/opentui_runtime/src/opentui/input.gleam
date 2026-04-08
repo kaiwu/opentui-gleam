@@ -1,7 +1,6 @@
 import gleam/int
 import gleam/string
 import opentui/ffi
-import opentui/runtime
 
 pub type Parser
 
@@ -76,7 +75,7 @@ pub fn run_event_loop(
 ) -> Nil {
   let parser = create_parser()
 
-  runtime.run_raw_input_loop(
+  ffi.run_raw_input_loop(
     ffi.renderer_to_int(renderer),
     fn(chunk) {
       consume_chunk(parser, chunk, fn(raw) { on_event(parse_event(raw)) })
