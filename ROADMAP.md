@@ -363,11 +363,11 @@ Concrete work items derived from auditing the codebase against the roadmap above
 - [x] `text_buffer.gleam` — all 6 FFI functions wrapped with safe API
 - [x] `input.gleam` — comprehensive keyboard, mouse, hit-grid, event loop support (95 lines)
 - [x] Hit-grid helpers — `clear_hit_grid()`, `add_hit_region()`, `hit_at()` wrapped in `input.gleam`
-- [ ] `editor_view.gleam` — deepen beyond the current 3 functions; add viewport management helpers, cursor positioning, selection handling, scroll state
-- [ ] `syntax_style.gleam` — add style composition helpers and higher-level styling patterns beyond raw `register()`
-- [ ] Create `clipboard.gleam` — wrap `copy_to_clipboard_osc52` from FFI with byte-size handling
-- [ ] Create `callbacks.gleam` — wrap `set_log_callback` and `set_event_callback` with ergonomic Gleam API
-- [ ] Higher-level input/event model — an abstraction above raw demo loops so apps can compose event handling without reimplementing the loop pattern
+- [x] `editor_view.gleam` — added `render()` (viewport+draw in one call), `line_count()`, `gutter_width()`, `draw_line_numbers()`, `cursor_scroll_state()`
+- [x] `syntax_style.gleam` — added attribute constants, `StyleDef` record, `register_fg()`, `register_all()` for batch registration
+- [x] Create `clipboard.gleam` — wraps `copy_to_clipboard_osc52` with `ClipboardTarget` type and byte-size handling
+- [x] Create `callbacks.gleam` — wraps `set_log_callback` and `set_event_callback` as `on_log`/`on_event`
+- [x] Higher-level app model — `app.gleam` with `AppConfig`, `run_static`, `run_interactive`, `run_animated` that encapsulate renderer lifecycle
 
 ### Phase 3 — Build Gleam-native UI abstractions
 
