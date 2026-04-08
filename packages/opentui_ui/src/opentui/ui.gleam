@@ -34,6 +34,7 @@ pub type Style {
 pub type Element {
   Box(List(Style), List(Element))
   Column(List(Style), List(Element))
+  Row(List(Style), List(Element))
   Text(List(Style), String)
   Paragraph(List(Style), String)
   Spacer(Int)
@@ -171,6 +172,7 @@ fn render_element(buf: ffi.Buffer, parent: Rect, element: Element) -> Int {
   case element {
     Box(styles, children) -> render_box(buf, parent, styles, children)
     Column(styles, children) -> render_column(buf, parent, styles, children)
+    Row(styles, children) -> render_row(buf, parent, styles, children)
     Text(styles, content) -> render_text(buf, parent, styles, content)
     Paragraph(styles, content) -> render_paragraph(buf, parent, styles, content)
     Spacer(height) -> height
@@ -200,6 +202,17 @@ fn plan_element(parent: Rect, element: Element) -> LayoutNode {
         rect.width,
         rect.height,
         plan_column_children(children, rect, gap(styles), 0),
+      )
+    }
+    Row(styles, children) -> {
+      let rect = resolve_rect(parent, styles)
+      LayoutNode(
+        "Row",
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        plan_row_children(children, rect, gap(styles), 0),
       )
     }
     Text(styles, _content) -> {
@@ -326,6 +339,111 @@ fn render_column_items(
           render_column_items(buf, rect, gap, rest, used + child_used + gap)
         }
       }
+  }
+}
+
+fn render_row(
+  buf: ffi.Buffer,
+  parent: Rect,
+  styles: List(Style),
+  children: List(Element),
+) -> Int {
+  let rect = resolve_rect(parent, styles)
+  let g = gap(styles)
+  let max_h = render_row_items(buf, rect, g, children, 0, 0)
+  case max_h > 0 {
+    True -> max_h
+    False -> rect.height
+  }
+}
+
+fn render_row_items(
+  buf: ffi.Buffer,
+  rect: Rect,
+  gap: Int,
+  children: List(Element),
+  used_x: Int,
+  max_height: Int,
+) -> Int {
+  case rect.width - used_x <= 0 {
+    True -> max_height
+    False ->
+      case children {
+        [] -> max_height
+        [element] -> {
+          let child_rect =
+            Rect(rect.x + used_x, rect.y, rect.width - used_x, rect.height)
+          let child_h = render_element(buf, child_rect, element)
+          int.max(max_height, child_h)
+        }
+        [element, ..rest] -> {
+          let child_rect =
+            Rect(rect.x + used_x, rect.y, rect.width - used_x, rect.height)
+          let child_w = element_width(element, child_rect)
+          let child_h = render_element(buf, child_rect, element)
+          render_row_items(
+            buf,
+            rect,
+            gap,
+            rest,
+            used_x + child_w + gap,
+            int.max(max_height, child_h),
+          )
+        }
+      }
+  }
+}
+
+fn plan_row_children(
+  children: List(Element),
+  rect: Rect,
+  gap: Int,
+  used_x: Int,
+) -> List(LayoutNode) {
+  case rect.width - used_x <= 0, children {
+    True, _ -> []
+    False, [] -> []
+    False, [element] -> {
+      let child_rect =
+        Rect(rect.x + used_x, rect.y, rect.width - used_x, rect.height)
+      [plan_element(child_rect, element)]
+    }
+    False, [element, ..rest] -> {
+      let child_rect =
+        Rect(rect.x + used_x, rect.y, rect.width - used_x, rect.height)
+      let node = plan_element(child_rect, element)
+      [node, ..plan_row_children(rest, rect, gap, used_x + node.width + gap)]
+    }
+  }
+}
+
+fn element_width(element: Element, parent: Rect) -> Int {
+  case element {
+    Box(styles, _) | Column(styles, _) | Row(styles, _) -> {
+      int_style(
+        styles,
+        fn(style) {
+          case style {
+            Width(value) -> Ok(value)
+            _ -> Error(Nil)
+          }
+        },
+        parent.width,
+      )
+    }
+    Text(styles, _) | Paragraph(styles, _) -> {
+      int_style(
+        styles,
+        fn(style) {
+          case style {
+            Width(value) -> Ok(value)
+            _ -> Error(Nil)
+          }
+        },
+        parent.width,
+      )
+    }
+    Spacer(_) -> 0
   }
 }
 
@@ -741,11 +859,7 @@ fn each_index_loop(i: Int, n: Int, f: fn(Int) -> Nil) -> Nil {
 fn fold_element(element: Element, acc: a, visit: fn(a, Element) -> a) -> a {
   let next = visit(acc, element)
   case element {
-    Box(_, children) ->
-      list.fold(children, next, fn(inner, child) {
-        fold_element(child, inner, visit)
-      })
-    Column(_, children) ->
+    Box(_, children) | Column(_, children) | Row(_, children) ->
       list.fold(children, next, fn(inner, child) {
         fold_element(child, inner, visit)
       })
@@ -763,6 +877,12 @@ fn element_to_string(element: Element) -> String {
       <> "])"
     Column(styles, children) ->
       "Column("
+      <> styles_to_string(styles)
+      <> ", ["
+      <> children_to_string(children)
+      <> "])"
+    Row(styles, children) ->
+      "Row("
       <> styles_to_string(styles)
       <> ", ["
       <> children_to_string(children)

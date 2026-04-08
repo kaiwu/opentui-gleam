@@ -371,17 +371,17 @@ Concrete work items derived from auditing the codebase against the roadmap above
 
 ### Phase 3 — Build Gleam-native UI abstractions
 
-- [x] `ui.gleam` — 818 lines, core rendering pipeline with Box, Column, Text, Paragraph, Spacer
+- [x] `ui.gleam` — core rendering pipeline with Box, Column, Row, Text, Paragraph, Spacer
 - [x] `wireframe.gleam` — 218 lines, complete 3D mesh rasterizer
-- [x] `draw_plan.gleam`, `interaction.gleam`, `timeline.gleam`, `simulation.gleam`, `frame_playback.gleam` — partial but functional helpers
-- [ ] Add `Row` element to `ui.gleam` — horizontal layout is completely missing, only vertical (Column) exists
-- [ ] Add scrolling/viewport container — demos currently manage scroll offset manually via state cells; extract into a reusable `ScrollView` element or helper
-- [ ] Add `TextInput` widget — currently hand-rolled per demo using `edit_buffer` from runtime
-- [ ] Add `Select` widget — demos build selects manually with Column + Text + external selection state
-- [ ] Add `TabBar` widget — no tab switching control exists
-- [ ] Add `CodeView` / line-number widget — code/diff rendering currently uses `editor_view` from runtime with no UI-layer abstraction
-- [ ] Deepen `interaction.gleam` — currently only drag region/session; needs keyboard focus, event routing, interaction state machines
-- [ ] Deepen `draw_plan.gleam` — only 3 operation types (FillRect, Text, Cell); underused vs. `ui.render_all()`
+- [x] `draw_plan.gleam`, `interaction.gleam`, `timeline.gleam`, `simulation.gleam`, `frame_playback.gleam` — functional helpers
+- [x] Add `Row` element to `ui.gleam` — horizontal layout with gap support, rendering, planning, fold, and to_string
+- [x] Add scrolling/viewport container — `widgets.gleam` `ScrollState` with `scroll_up`/`scroll_down`/`scroll_to`/`set_content_height` + `scroll_view` element builder
+- [x] Add `TextInput` widget — `widgets.gleam` `InputState` with insert, delete, cursor movement, home/end + `text_input` element builder
+- [x] Add `Select` widget — `widgets.gleam` `SelectState` with up/down/set + `select_list` element builder
+- [x] Add `TabBar` widget — `widgets.gleam` `TabState` with next/prev/set + `tab_bar` element builder using Row
+- [x] Add `CodeView` / line-number widget — `widgets.gleam` `code_view` rendering lines with optional gutter using Row
+- [x] Deepen `interaction.gleam` — added `FocusGroup` (next/prev/set/is_focused) and `ClickRegion`/`find_hit` for dispatching click events
+- [x] Deepen `draw_plan.gleam` — added `HLine`/`VLine` ops, `hline`/`vline` builders, and `translate` for offsetting entire plans
 
 ### Phase 4 — Expand demos into a real showcase ecosystem
 

@@ -90,6 +90,68 @@ pub fn clamp_region(target: DragRegion, drag_bounds: DragBounds) -> DragRegion {
   )
 }
 
+// ── Focus Management ──
+
+/// Tracks which item in a group has focus.
+pub type FocusGroup {
+  FocusGroup(focused: Int, count: Int)
+}
+
+pub fn focus_group(count: Int) -> FocusGroup {
+  FocusGroup(focused: 0, count: count)
+}
+
+pub fn focus_next(group: FocusGroup) -> FocusGroup {
+  FocusGroup(..group, focused: { group.focused + 1 } % group.count)
+}
+
+pub fn focus_prev(group: FocusGroup) -> FocusGroup {
+  FocusGroup(
+    ..group,
+    focused: { group.focused - 1 + group.count } % group.count,
+  )
+}
+
+pub fn focus_set(group: FocusGroup, index: Int) -> FocusGroup {
+  FocusGroup(..group, focused: clamp_int(index, 0, group.count - 1))
+}
+
+pub fn is_focused(group: FocusGroup, index: Int) -> Bool {
+  group.focused == index
+}
+
+// ── Click Region ──
+
+/// A named rectangular region for dispatching click/press events.
+pub type ClickRegion {
+  ClickRegion(id: Int, x: Int, y: Int, width: Int, height: Int)
+}
+
+/// Test whether a point falls inside a click region.
+pub fn click_hit(region: ClickRegion, px: Int, py: Int) -> Bool {
+  px >= region.x
+  && px < region.x + region.width
+  && py >= region.y
+  && py < region.y + region.height
+}
+
+/// Find the first click region hit at the given point. Returns the region
+/// id or Error(Nil) if nothing was hit.
+pub fn find_hit(
+  regions: List(ClickRegion),
+  px: Int,
+  py: Int,
+) -> Result(Int, Nil) {
+  case regions {
+    [] -> Error(Nil)
+    [region, ..rest] ->
+      case click_hit(region, px, py) {
+        True -> Ok(region.id)
+        False -> find_hit(rest, px, py)
+      }
+  }
+}
+
 fn clamp_int(value: Int, low: Int, high: Int) -> Int {
   case value < low {
     True -> low
