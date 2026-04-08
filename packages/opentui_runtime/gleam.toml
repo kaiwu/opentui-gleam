@@ -1,6 +1,8 @@
 name = "opentui_runtime"
 version = "0.1.0"
 gleam = ">= 1.15.0"
+description = "Ergonomic Gleam wrappers for OpenTUI — renderer, buffer, text, input, and editing APIs"
+licences = ["MIT"]
 
 target = "javascript"
 

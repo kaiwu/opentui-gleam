@@ -1,7 +1,7 @@
-name = "opentui_examples"
+name = "opentui_testing"
 version = "0.1.0"
 gleam = ">= 1.15.0"
-description = "Runnable demos and showcase applications for the OpenTUI Gleam ecosystem"
+description = "Testing utilities for OpenTUI Gleam — synthetic input, frame snapshots, widget verification"
 licences = ["MIT"]
 
 target = "javascript"
@@ -14,7 +14,6 @@ gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 opentui_core = { path = "../opentui_core" }
 opentui_runtime = { path = "../opentui_runtime" }
 opentui_ui = { path = "../opentui_ui" }
-opentui_3d = { path = "../opentui_3d" }
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
@@ -23,5 +22,5 @@ gleeunit = ">= 1.0.0 and < 2.0.0"
 type = "github"
 user = "kaiwu"
 repo = "opentui-gleam"
-path = "packages/opentui_examples"
-tag_prefix = "opentui_examples-"
+path = "packages/opentui_testing"
+tag_prefix = "opentui_testing-"

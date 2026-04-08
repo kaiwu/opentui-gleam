@@ -1,6 +1,8 @@
 name = "opentui_core"
 version = "0.1.0"
 gleam = ">= 1.15.0"
+description = "Low-level FFI bindings for OpenTUI — native Zig TUI library bridge for Gleam"
+licences = ["MIT"]
 
 target = "javascript"
 

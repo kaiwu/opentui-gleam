@@ -1,5 +1,5 @@
 import gleam/float
-import opentui/math3d
+import opentui/math
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,7 +132,7 @@ pub fn collide_circles(a: Body, b: Body) -> #(Body, Body) {
   case dist_sq <. min_dist *. min_dist && dist_sq >. 0.0001 {
     False -> #(a, b)
     True -> {
-      let dist = math3d.sqrt(dist_sq)
+      let dist = math.sqrt(dist_sq)
       let nx = dx /. dist
       let ny = dy /. dist
 
@@ -190,7 +190,7 @@ fn body_radius(body: Body) -> Float {
     Rect(width:, height:) -> {
       let half_w = width /. 2.0
       let half_h = height /. 2.0
-      math3d.sqrt(half_w *. half_w +. half_h *. half_h)
+      math.sqrt(half_w *. half_w +. half_h *. half_h)
     }
   }
 }

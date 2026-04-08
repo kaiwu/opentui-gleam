@@ -1,7 +1,7 @@
-name = "opentui_ui"
+name = "opentui_3d"
 version = "0.1.0"
 gleam = ">= 1.15.0"
-description = "Declarative UI elements, widgets, and layout abstractions for OpenTUI Gleam"
+description = "Optional 3D math, lighting, and wireframe rendering for OpenTUI Gleam"
 licences = ["MIT"]
 
 target = "javascript"
@@ -11,8 +11,6 @@ runtime = "bun"
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-opentui_core = { path = "../opentui_core" }
-opentui_runtime = { path = "../opentui_runtime" }
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
@@ -21,5 +19,5 @@ gleeunit = ">= 1.0.0 and < 2.0.0"
 type = "github"
 user = "kaiwu"
 repo = "opentui-gleam"
-path = "packages/opentui_ui"
-tag_prefix = "opentui_ui-"
+path = "packages/opentui_3d"
+tag_prefix = "opentui_3d-"

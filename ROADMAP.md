@@ -400,12 +400,23 @@ Concrete work items derived from auditing the codebase against the roadmap above
 
 ### Phase 5 — Add testing and optional advanced packages
 
-- [x] 352 test functions across 30 test files (10 core, 95 runtime, 40 ui, 206 examples)
-- [x] 3D capabilities implemented in `math3d.gleam`, `lighting.gleam`, `wireframe.gleam` — functional but not extracted
-- [ ] Create `opentui_testing` package with:
-  - [ ] Test renderer (headless renderer that captures draw calls without a terminal)
-  - [ ] Synthetic key/mouse input helpers (generate input events programmatically)
-  - [ ] Frame snapshot helpers (capture and compare rendered output)
-  - [ ] Demo/widget verification harness
-- [ ] Extract `opentui_3d` package — move `math3d.gleam`, `lighting.gleam` from runtime and `wireframe.gleam` from ui into a standalone optional package
-- [ ] Prepare packages for Hex.pm publishing — verify each package has clean `gleam.toml` metadata, README, license, and stable public API surface
+- [x] 400 test functions across 6 packages (10 core, 80 runtime, 59 ui, 31 3d, 15 testing, 205 examples)
+- [x] Extract `opentui_3d` package:
+  - [x] Moved `math3d.gleam`, `lighting.gleam` from runtime and `wireframe.gleam` from ui into `packages/opentui_3d`
+  - [x] Created `opentui/math.gleam` in runtime for trig FFI (used by `physics2d`)
+  - [x] Copied `math_ffi.js` to opentui_3d for self-contained trig support
+  - [x] Moved math3d/lighting/wireframe tests to opentui_3d package
+  - [x] Updated `opentui_examples` to depend on `opentui_3d`
+- [x] Create `opentui_testing` package with:
+  - [x] Synthetic key/mouse input helpers (`arrow_up`, `char`, `mouse_press`, `tab`, etc.)
+  - [x] State machine testing (`apply_events`, `apply_keys` for driving widget state)
+  - [x] Element tree inspection (`count_elements`, `element_texts`, `tree_contains_text`)
+  - [x] Layout plan inspection (`find_nodes`, `layout_bounds`, `plan_snapshot`)
+  - [x] Frame snapshot helpers (`snapshot` via `ui.to_string`)
+  - [x] Widget verification harness (`trace_widget` captures state+view after each event)
+  - [x] 15 tests covering all testing utilities
+- [x] Prepare packages for Hex.pm publishing:
+  - [x] All 6 packages have `description` and `licences` in `gleam.toml`
+  - [x] All packages have `[repository]` metadata with tag prefixes
+  - [x] Root LICENSE file (MIT) added
+  - [x] Build and test scripts updated for all 6 packages

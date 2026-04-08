@@ -34,13 +34,15 @@ The run-example script converts kebab-case IDs to snake_case module paths automa
 
 ## Package Architecture
 
-Four packages with **strict downward-only dependencies**:
+Six packages with **strict downward-only dependencies**:
 
 ```
 opentui_core       → no internal deps (FFI layer)
 opentui_runtime    → opentui_core (ergonomic wrappers)
 opentui_ui         → opentui_core, opentui_runtime (declarative UI)
-opentui_examples   → all three above (demos)
+opentui_3d         → no internal deps (optional 3D math/lighting/wireframe)
+opentui_testing    → opentui_core, opentui_runtime, opentui_ui (test utilities)
+opentui_examples   → all above except opentui_testing (demos)
 ```
 
 Never introduce upward imports. Each package is independently publishable to Hex.pm.
@@ -54,17 +56,25 @@ Raw FFI bindings. Key files:
 
 ### opentui_runtime
 
-Safe Gleam wrappers. Modules: `renderer`, `buffer`, `text`, `edit_buffer`, `text_buffer`, `editor_view`, `framebuffer`, `input`, `grapheme`, `syntax_style`, `animation`, `math3d`, `lighting`, `physics2d`, `types`.
+Safe Gleam wrappers. Modules: `renderer`, `buffer`, `text`, `edit_buffer`, `text_buffer`, `editor_view`, `framebuffer`, `input`, `grapheme`, `syntax_style`, `animation`, `math`, `physics2d`, `types`, `clipboard`, `callbacks`, `app`, `runtime`.
 
-Pure math modules (`math3d`, `lighting`, `physics2d`, `animation`) have **zero native FFI** except trig functions via `math_ffi.js` (wraps `Math.sin/cos/sqrt/atan2/pow/PI`).
+Pure math modules (`physics2d`, `animation`) have **zero native FFI** except trig functions via `math_ffi.js` (wraps `Math.sin/cos/sqrt/atan2/pow/PI`).
 
 ### opentui_ui
 
-Declarative UI as ADTs: `Element` (Box, Column, Text, Paragraph, Spacer), `Style`, `Color`. Key functions: `render_all()` (single-pass render to buffer), `plan()` (pure layout), `fold()` (tree traversal).
+Declarative UI as ADTs: `Element` (Box, Column, Row, Text, Paragraph, Spacer), `Style`, `Color`. Key functions: `render_all()` (single-pass render to buffer), `plan()` (pure layout), `fold()` (tree traversal). Includes `widgets.gleam` (ScrollState, InputState, SelectState, TabState, CodeView), `interaction.gleam` (DragSession, FocusGroup, ClickRegion), `draw_plan.gleam`, `timeline.gleam`, `simulation.gleam`, `frame_playback.gleam`.
+
+### opentui_3d
+
+Optional 3D package: `math3d.gleam` (Vec3, rotations, projection), `lighting.gleam` (Phong shading, multi-light illumination), `wireframe.gleam` (mesh rasterization, Bresenham lines). Self-contained with its own `math_ffi.js`.
+
+### opentui_testing
+
+Testing utilities: `testing.gleam` with synthetic input helpers (key/mouse event generators), state machine testing (`apply_events`, `apply_keys`), element tree inspection, layout plan inspection, frame snapshots, and widget verification harness (`trace_widget`).
 
 ### opentui_examples
 
-64 demos across 5 phases. Shared infrastructure:
+59 demos across 5 phases. Shared infrastructure:
 - `common.gleam` — color palette, terminal dimensions (80×24), demo runners (`run_static_demo`, `run_interactive_demo`, `run_animated_demo`)
 - `catalog.gleam` — demo registry with `Demo(id, module, description)`
 - `phase{N}_model.gleam` — pure data/functions for each phase's demos
@@ -92,7 +102,7 @@ Declarative UI as ADTs: `Element` (Box, Column, Text, Paragraph, Spacer), `Style
 
 ## Testing
 
-Tests use `gleeunit`. Test files live in each package's `test/` directory. Current count: 216 tests (10 core, 92 runtime, 17 ui, 97 examples).
+Tests use `gleeunit`. Test files live in each package's `test/` directory. Current count: 400 tests (10 core, 80 runtime, 59 ui, 31 3d, 15 testing, 205 examples).
 
 Prefer pure/deterministic tests over terminal smoke tests. Test layout planning, state transforms, math functions, and data structures directly.
 
