@@ -707,6 +707,55 @@ pub fn text_input_renders_display_value_test() {
   }
 }
 
+pub fn progress_bar_renders_filled_and_empty_cells_test() {
+  case widgets.progress_bar([], 10, 0.4, "█", "░") {
+    ui.Text(_, content) -> content |> should.equal("████░░░░░░")
+    _ -> panic as "expected Text"
+  }
+}
+
+pub fn progress_bar_clamps_progress_test() {
+  case widgets.progress_bar([], 5, 2.0, "#", "-") {
+    ui.Text(_, content) -> content |> should.equal("#####")
+    _ -> panic as "expected Text"
+  }
+}
+
+pub fn format_table_renders_box_drawing_lines_test() {
+  widgets.format_table(["Name", "PnL"], [["AAPL", "+12"], ["TSLA", "-3"]], [
+    widgets.AlignLeft,
+    widgets.AlignRight,
+  ])
+  |> should.equal([
+    "┌──────┬─────┐",
+    "│ Name │ PnL │",
+    "├──────┼─────┤",
+    "│ AAPL │ +12 │",
+    "│ TSLA │  -3 │",
+    "└──────┴─────┘",
+  ])
+}
+
+pub fn table_widget_renders_lines_as_text_rows_test() {
+  case
+    widgets.table([], ["Name", "Qty"], [["BTC", "2"]], [
+      widgets.AlignLeft,
+      widgets.AlignRight,
+    ])
+  {
+    ui.Column(_, rows) ->
+      rows
+      |> should.equal([
+        ui.Text([], "┌──────┬─────┐"),
+        ui.Text([], "│ Name │ Qty │"),
+        ui.Text([], "├──────┼─────┤"),
+        ui.Text([], "│ BTC  │   2 │"),
+        ui.Text([], "└──────┴─────┘"),
+      ])
+    _ -> panic as "expected Column"
+  }
+}
+
 // ── Widget tests: SelectState ──
 
 pub fn select_up_down_test() {

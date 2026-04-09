@@ -271,10 +271,182 @@ pub fn code_view(
   Column(styles, rows)
 }
 
+// ── ProgressBar ──
+
+pub fn progress_bar(
+  styles: List(Style),
+  width: Int,
+  progress: Float,
+  filled_char: String,
+  empty_char: String,
+) -> Element {
+  let clamped = clamp_float(progress, 0.0, 1.0)
+  let filled = filled_slots(width, clamped *. int.to_float(width), 0)
+  let empty = int.max(0, width - filled)
+
+  Text(
+    styles,
+    repeat_text(filled_char, filled) <> repeat_text(empty_char, empty),
+  )
+}
+
+// ── Table ──
+
+pub type Alignment {
+  AlignLeft
+  AlignCenter
+  AlignRight
+}
+
+pub fn table(
+  styles: List(Style),
+  headers: List(String),
+  rows: List(List(String)),
+  aligns: List(Alignment),
+) -> Element {
+  let lines = format_table(headers, rows, aligns)
+  Column(styles, list.map(lines, fn(line) { Text([], line) }))
+}
+
+pub fn format_table(
+  headers: List(String),
+  rows: List(List(String)),
+  aligns: List(Alignment),
+) -> List(String) {
+  let widths = column_widths(headers, rows, 3)
+  [
+    format_table_top(widths),
+    format_row(headers, widths, aligns),
+    format_separator(widths),
+    ..list.append(list.map(rows, fn(row) { format_row(row, widths, aligns) }), [
+      format_table_bottom(widths),
+    ])
+  ]
+}
+
 // ── Helpers ──
 
 fn clamp(value: Int, low: Int, high: Int) -> Int {
   int.max(low, int.min(high, value))
+}
+
+fn clamp_float(value: Float, low: Float, high: Float) -> Float {
+  case value <. low {
+    True -> low
+    False ->
+      case value >. high {
+        True -> high
+        False -> value
+      }
+  }
+}
+
+fn filled_slots(width: Int, threshold: Float, index: Int) -> Int {
+  case index >= width {
+    True -> 0
+    False ->
+      case int.to_float(index + 1) <=. threshold {
+        True -> 1 + filled_slots(width, threshold, index + 1)
+        False -> filled_slots(width, threshold, index + 1)
+      }
+  }
+}
+
+fn repeat_text(text: String, count: Int) -> String {
+  case count <= 0 {
+    True -> ""
+    False -> text <> repeat_text(text, count - 1)
+  }
+}
+
+fn column_widths(
+  headers: List(String),
+  rows: List(List(String)),
+  min_width: Int,
+) -> List(Int) {
+  let header_widths = list.map(headers, string.length)
+  let row_widths = list.map(rows, fn(row) { list.map(row, string.length) })
+  let max_widths = list.fold(row_widths, header_widths, merge_widths)
+  list.map(max_widths, fn(width) { int.max(width, min_width) })
+}
+
+fn merge_widths(acc: List(Int), widths: List(Int)) -> List(Int) {
+  case acc, widths {
+    [], [] -> []
+    [a, ..arest], [b, ..brest] -> [int.max(a, b), ..merge_widths(arest, brest)]
+    [a, ..arest], [] -> [a, ..merge_widths(arest, [])]
+    [], [b, ..brest] -> [b, ..merge_widths([], brest)]
+  }
+}
+
+fn format_separator(widths: List(Int)) -> String {
+  "├─"
+  <> widths
+  |> list.map(fn(w) { repeat_text("─", w) })
+  |> string.join("─┼─")
+  <> "─┤"
+}
+
+fn format_table_top(widths: List(Int)) -> String {
+  "┌─"
+  <> widths
+  |> list.map(fn(w) { repeat_text("─", w) })
+  |> string.join("─┬─")
+  <> "─┐"
+}
+
+fn format_table_bottom(widths: List(Int)) -> String {
+  "└─"
+  <> widths
+  |> list.map(fn(w) { repeat_text("─", w) })
+  |> string.join("─┴─")
+  <> "─┘"
+}
+
+fn format_row(
+  cells: List(String),
+  widths: List(Int),
+  aligns: List(Alignment),
+) -> String {
+  "│ " <> format_cells(cells, widths, aligns) <> " │"
+}
+
+fn format_cells(
+  cells: List(String),
+  widths: List(Int),
+  aligns: List(Alignment),
+) -> String {
+  case cells, widths, aligns {
+    [], [], [] -> ""
+    [cell, ..rest_cells], [width, ..rest_widths], [align, ..rest_aligns] ->
+      align_cell(cell, width, align)
+      <> case rest_cells, rest_widths, rest_aligns {
+        [], [], [] -> ""
+        _, _, _ -> " │ " <> format_cells(rest_cells, rest_widths, rest_aligns)
+      }
+    [cell, ..rest_cells], [width, ..rest_widths], [] ->
+      align_cell(cell, width, AlignLeft)
+      <> case rest_cells, rest_widths {
+        [], [] -> ""
+        _, _ -> " │ " <> format_cells(rest_cells, rest_widths, [])
+      }
+    _, _, _ -> ""
+  }
+}
+
+fn align_cell(cell: String, width: Int, align: Alignment) -> String {
+  let cell_width = string.length(cell)
+  let padding = int.max(0, width - cell_width)
+
+  case align {
+    AlignLeft -> cell <> repeat_text(" ", padding)
+    AlignRight -> repeat_text(" ", padding) <> cell
+    AlignCenter -> {
+      let left = padding / 2
+      let right = padding - left
+      repeat_text(" ", left) <> cell <> repeat_text(" ", right)
+    }
+  }
 }
 
 fn slice_list(items: List(a), start: Int, count: Int) -> List(a) {
