@@ -2,8 +2,8 @@ import gleam/int
 import gleam/list
 import gleam/string
 import opentui/ui.{
-  type Color, type Element, type Style, Background, Column, Foreground, Row,
-  Text, Width,
+  type Color, type Element, type Style, Background, Column, Foreground, Height,
+  Row, Text, Width,
 }
 
 // ── ScrollView ──
@@ -18,26 +18,17 @@ pub fn scroll_state(viewport_height: Int) -> ScrollState {
 }
 
 pub fn scroll_up(state: ScrollState, amount: Int) -> ScrollState {
-  ScrollState(
-    ..state,
-    offset: int.max(0, state.offset - amount),
-  )
+  ScrollState(..state, offset: int.max(0, state.offset - amount))
 }
 
 pub fn scroll_down(state: ScrollState, amount: Int) -> ScrollState {
   let max_offset = int.max(0, state.content_height - state.viewport_height)
-  ScrollState(
-    ..state,
-    offset: int.min(max_offset, state.offset + amount),
-  )
+  ScrollState(..state, offset: int.min(max_offset, state.offset + amount))
 }
 
 pub fn scroll_to(state: ScrollState, offset: Int) -> ScrollState {
   let max_offset = int.max(0, state.content_height - state.viewport_height)
-  ScrollState(
-    ..state,
-    offset: clamp(offset, 0, max_offset),
-  )
+  ScrollState(..state, offset: clamp(offset, 0, max_offset))
 }
 
 pub fn set_content_height(state: ScrollState, height: Int) -> ScrollState {
@@ -58,7 +49,7 @@ pub fn scroll_view(
   rows: List(Element),
 ) -> Element {
   let visible = slice_list(rows, state.offset, state.viewport_height)
-  Column(styles, visible)
+  Column([Height(state.viewport_height), ..styles], visible)
 }
 
 // ── TextInput ──
@@ -74,7 +65,12 @@ pub fn input_state(initial: String) -> InputState {
 
 pub fn input_insert(state: InputState, ch: String) -> InputState {
   let before = string.slice(state.value, 0, state.cursor)
-  let after = string.slice(state.value, state.cursor, string.length(state.value) - state.cursor)
+  let after =
+    string.slice(
+      state.value,
+      state.cursor,
+      string.length(state.value) - state.cursor,
+    )
   InputState(
     ..state,
     value: before <> ch <> after,
@@ -87,7 +83,12 @@ pub fn input_delete_backward(state: InputState) -> InputState {
     False -> state
     True -> {
       let before = string.slice(state.value, 0, state.cursor - 1)
-      let after = string.slice(state.value, state.cursor, string.length(state.value) - state.cursor)
+      let after =
+        string.slice(
+          state.value,
+          state.cursor,
+          string.length(state.value) - state.cursor,
+        )
       InputState(..state, value: before <> after, cursor: state.cursor - 1)
     }
   }
@@ -112,12 +113,32 @@ pub fn input_move_end(state: InputState) -> InputState {
   InputState(..state, cursor: string.length(state.value))
 }
 
+pub fn input_blur(state: InputState) -> InputState {
+  InputState(..state, focused: False)
+}
+
+pub fn input_focus(state: InputState) -> InputState {
+  InputState(..state, focused: True)
+}
+
+pub fn input_display_value(state: InputState) -> String {
+  let before = string.slice(state.value, 0, state.cursor)
+  let after =
+    string.slice(
+      state.value,
+      state.cursor,
+      string.length(state.value) - state.cursor,
+    )
+
+  case state.focused {
+    True -> before <> "█" <> after
+    False -> before <> " " <> after
+  }
+}
+
 /// Render a text input as a single-line Text element.
-pub fn text_input(
-  styles: List(Style),
-  state: InputState,
-) -> Element {
-  Text(styles, state.value)
+pub fn text_input(styles: List(Style), state: InputState) -> Element {
+  Text(styles, input_display_value(state))
 }
 
 // ── Select ──
@@ -136,10 +157,7 @@ pub fn select_up(state: SelectState) -> SelectState {
 }
 
 pub fn select_down(state: SelectState) -> SelectState {
-  SelectState(
-    ..state,
-    selected: int.min(state.count - 1, state.selected + 1),
-  )
+  SelectState(..state, selected: int.min(state.count - 1, state.selected + 1))
 }
 
 pub fn select_set(state: SelectState, index: Int) -> SelectState {
@@ -181,10 +199,7 @@ pub fn tab_next(state: TabState) -> TabState {
 }
 
 pub fn tab_prev(state: TabState) -> TabState {
-  TabState(
-    ..state,
-    active: { state.active - 1 + state.count } % state.count,
-  )
+  TabState(..state, active: { state.active - 1 + state.count } % state.count)
 }
 
 pub fn tab_set(state: TabState, index: Int) -> TabState {
@@ -236,11 +251,14 @@ pub fn code_view(
       case show_line_numbers {
         True -> {
           let num_str =
-            string.pad_start(int.to_string(line_num), gutter_w - 1, " ")
-            <> " "
+            string.pad_start(int.to_string(line_num), gutter_w - 1, " ") <> " "
           Row([], [
             Text(
-              [Width(gutter_w), Foreground(line_number_fg), Background(line_number_bg)],
+              [
+                Width(gutter_w),
+                Foreground(line_number_fg),
+                Background(line_number_bg),
+              ],
               num_str,
             ),
             Text([Foreground(code_fg), Background(code_bg)], line),

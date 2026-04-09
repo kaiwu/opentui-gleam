@@ -188,7 +188,11 @@ fn general_tab(
         ]
         False -> []
       },
-      "> " <> display_input(inp),
+      "> "
+        <> widgets.input_display_value(case input_active {
+        True -> widgets.input_focus(inp)
+        False -> widgets.input_blur(inp)
+      }),
     ),
     ui.Spacer(1),
     common.line_with(label_styles, "Email: user@example.com (read-only)"),
@@ -196,9 +200,10 @@ fn general_tab(
     ui.Spacer(1),
     common.line_with(
       [ui.Foreground(common.color(common.muted_fg))],
-      "Length: " <> int.to_string(inp.cursor) <> "/" <> int.to_string(
-        string.length(inp.value),
-      ),
+      "Length: "
+        <> int.to_string(inp.cursor)
+        <> "/"
+        <> int.to_string(string.length(inp.value)),
     ),
   ])
 }
@@ -279,7 +284,9 @@ fn status_line(fg: interaction.FocusGroup) -> ui.Element {
   }
   common.line_with(
     [ui.Foreground(common.color(common.muted_fg))],
-    "Tab: cycle focus | ←→: tabs | ↑↓: select | Type: edit  [focus: " <> area <> "]",
+    "Tab: cycle focus | ←→: tabs | ↑↓: select | Type: edit  [focus: "
+      <> area
+      <> "]",
   )
 }
 
@@ -287,17 +294,5 @@ fn focus_indicator(fg: interaction.FocusGroup, index: Int) -> String {
   case interaction.is_focused(fg, index) {
     True -> " *"
     False -> ""
-  }
-}
-
-fn display_input(inp: widgets.InputState) -> String {
-  let value = inp.value
-  let len = string.length(value)
-  case inp.cursor < len {
-    True ->
-      string.slice(value, 0, inp.cursor)
-      <> "█"
-      <> string.slice(value, inp.cursor, len - inp.cursor)
-    False -> value <> "█"
   }
 }

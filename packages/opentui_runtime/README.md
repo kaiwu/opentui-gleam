@@ -4,10 +4,23 @@ Ergonomic Gleam wrappers over `opentui_core`.
 
 This package provides the main runtime-facing APIs for:
 
+- app lifecycle/orchestration helpers
+- loop helpers above the raw FFI boundary
 - renderer lifecycle
 - buffer drawing
 - edit buffer operations
 - pure text helpers
+
+Key modules now include:
+
+- `opentui/app.gleam`
+- `opentui/runtime.gleam`
+- `opentui/renderer.gleam`
+- `opentui/buffer.gleam`
+- `opentui/input.gleam`
+- `opentui/editor_view.gleam`
+- `opentui/text_buffer.gleam`
+- `opentui/syntax_style.gleam`
 
 ## Future async APIs
 

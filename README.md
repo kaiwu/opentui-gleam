@@ -9,6 +9,8 @@ packages/
   opentui_core/
   opentui_runtime/
   opentui_ui/
+  opentui_testing/
+  opentui_3d/
   opentui_examples/
 ```
 
@@ -17,7 +19,6 @@ packages/
 Owns the low-level native bridge:
 
 - `opentui/ffi.gleam`
-- `opentui/runtime.gleam`
 - `opentui/ffi_shim.js`
 - native resolution logic
 - native fallback `package.json`
@@ -27,6 +28,7 @@ Owns the low-level native bridge:
 
 Owns ergonomic Gleam wrappers over the core layer:
 
+- `opentui/runtime.gleam`
 - `opentui/renderer.gleam`
 - `opentui/buffer.gleam`
 - `opentui/edit_buffer.gleam`
@@ -41,6 +43,23 @@ Owns the declarative UI layer:
 - pure element ADTs
 - single-pass rendering from UI data into buffer calls
 - pure helpers like tree folding and serialization
+
+### `packages/opentui_testing`
+
+Owns reusable testing support for pure UI trees and widget/state assertions:
+
+- `opentui/testing.gleam`
+- synthetic key and mouse helpers
+- element tree and layout-plan inspection
+- widget trace helpers
+
+### `packages/opentui_3d`
+
+Owns optional 3D-specific pure planning and math helpers:
+
+- `opentui/math3d.gleam`
+- `opentui/lighting.gleam`
+- `opentui/wireframe.gleam`
 
 ### `packages/opentui_examples`
 
@@ -58,7 +77,9 @@ Current dependency flow:
 
 - `opentui_runtime` → `opentui_core`
 - `opentui_ui` → `opentui_core`, `opentui_runtime`
-- `opentui_examples` → `opentui_core`, `opentui_runtime`, `opentui_ui`
+- `opentui_testing` → `opentui_runtime`, `opentui_ui`
+- `opentui_3d` → `opentui_runtime`
+- `opentui_examples` → `opentui_core`, `opentui_runtime`, `opentui_ui`, `opentui_3d`
 
 ## Getting started
 
@@ -97,7 +118,7 @@ The script runs `zig build` inside `native/opentui-zig/packages/core/src/zig/` a
 Once the native library is available through either option:
 
 ```bash
-./scripts/build-all.sh   # builds all four packages
+./scripts/build-all.sh   # builds all six packages
 ./scripts/test-all.sh    # runs all tests
 ```
 

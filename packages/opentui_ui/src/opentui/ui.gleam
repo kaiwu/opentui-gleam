@@ -61,7 +61,16 @@ type BorderStyle {
 }
 
 pub fn render_all(buf: ffi.Buffer, elements: List(Element)) -> Nil {
-  render_absolute(buf, elements)
+  render_in_bounds(buf, 80, 24, elements)
+}
+
+pub fn render_in_bounds(
+  buf: ffi.Buffer,
+  width: Int,
+  height: Int,
+  elements: List(Element),
+) -> Nil {
+  render_absolute(buf, Rect(0, 0, width, height), elements)
 }
 
 pub fn fold(
@@ -88,12 +97,12 @@ pub fn plan(
   plan_absolute(elements, Rect(0, 0, width, height))
 }
 
-fn render_absolute(buf: ffi.Buffer, elements: List(Element)) -> Nil {
+fn render_absolute(buf: ffi.Buffer, rect: Rect, elements: List(Element)) -> Nil {
   case elements {
     [] -> Nil
     [element, ..rest] -> {
-      let _ = render_element(buf, Rect(0, 0, 1000, 1000), element)
-      render_absolute(buf, rest)
+      let _ = render_element(buf, rect, element)
+      render_absolute(buf, rect, rest)
     }
   }
 }

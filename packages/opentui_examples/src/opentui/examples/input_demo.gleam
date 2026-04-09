@@ -5,6 +5,7 @@ import opentui/examples/common
 import opentui/examples/phase2_model as model
 import opentui/ffi
 import opentui/ui
+import opentui/widgets
 
 pub fn main() -> Nil {
   let input = edit_buffer.create(0)
@@ -32,6 +33,9 @@ fn handle_key(input: ffi.EditBuffer, raw: String) -> Nil {
 fn view(input: ffi.EditBuffer) -> List(ui.Element) {
   let value = edit_buffer.text(input)
   let #(_row, col) = edit_buffer.cursor(input)
+  let display =
+    widgets.InputState(value: value, cursor: col, focused: True)
+    |> widgets.input_display_value
 
   [
     common.panel("Input field", 2, 3, 50, 18, [
@@ -47,7 +51,7 @@ fn view(input: ffi.EditBuffer) -> List(ui.Element) {
             ui.Background(common.color(common.accent_blue)),
             ui.Attributes(1),
           ],
-          "> " <> display_value(value, col),
+          "> " <> display,
         ),
         common.line("Cursor column: " <> int.to_string(col + 1)),
         common.line("Length: " <> int.to_string(string.length(value))),
@@ -65,14 +69,4 @@ fn view(input: ffi.EditBuffer) -> List(ui.Element) {
       ]),
     ]),
   ]
-}
-
-fn display_value(value: String, col: Int) -> String {
-  case col < string.length(value) {
-    True ->
-      string.slice(value, 0, col)
-      <> "█"
-      <> string.slice(value, col, string.length(value) - col)
-    False -> value <> "█"
-  }
 }

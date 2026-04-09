@@ -8,7 +8,15 @@ This package owns:
 - the Bun FFI shim
 - native library resolution
 
+It does **not** own higher-level loop orchestration modules such as
+`opentui/runtime.gleam`; those now live in `opentui_runtime`.
+
 It is intended to stay small and mechanical.
+
+To keep that promise maintainable over time, the JS shim is split into focused
+helper modules for native loading, marshaling, unicode encoding, and input-loop
+behavior while preserving the same `ffi_shim.js` export surface expected by
+Gleam `@external` declarations.
 
 ## Sync vs async boundary
 

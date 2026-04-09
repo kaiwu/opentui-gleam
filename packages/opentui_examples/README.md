@@ -1,6 +1,6 @@
 # opentui_examples
 
-Runnable Gleam demos built on top of `opentui_core`, `opentui_runtime`, and `opentui_ui`.
+Runnable Gleam demos built on top of `opentui_core`, `opentui_runtime`, `opentui_ui`, and, for advanced showcase demos, `opentui_3d`.
 
 This package is also the execution backlog for porting the upstream TypeScript demos one by one while expanding the right lower-level packages.
 

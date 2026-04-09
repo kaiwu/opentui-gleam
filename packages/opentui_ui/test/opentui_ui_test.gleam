@@ -624,6 +624,22 @@ pub fn scroll_up_clamps_to_zero_test() {
   |> should.equal(0)
 }
 
+pub fn scroll_view_applies_viewport_height_test() {
+  let element =
+    widgets.scroll_view([], widgets.scroll_state(4), [
+      ui.Text([], "a"),
+      ui.Text([], "b"),
+    ])
+
+  case element {
+    ui.Column(styles, children) -> {
+      let _ = styles |> should.equal([ui.Height(4)])
+      children |> should.equal([ui.Text([], "a"), ui.Text([], "b")])
+    }
+    _ -> panic as "expected Column"
+  }
+}
+
 // ── Widget tests: InputState ──
 
 pub fn input_insert_test() {
@@ -659,6 +675,36 @@ pub fn input_insert_at_middle_test() {
   let updated = widgets.input_insert(state, "X")
   let _ = updated.value |> should.equal("abXcd")
   updated.cursor |> should.equal(3)
+}
+
+pub fn input_display_value_shows_cursor_when_focused_test() {
+  widgets.InputState(value: "abc", cursor: 1, focused: True)
+  |> widgets.input_display_value
+  |> should.equal("a█bc")
+}
+
+pub fn input_display_value_uses_space_when_blurred_test() {
+  widgets.InputState(value: "abc", cursor: 1, focused: False)
+  |> widgets.input_display_value
+  |> should.equal("a bc")
+}
+
+pub fn input_focus_and_blur_toggle_focus_test() {
+  let state =
+    widgets.input_state("x") |> widgets.input_blur |> widgets.input_focus
+  state.focused |> should.equal(True)
+}
+
+pub fn text_input_renders_display_value_test() {
+  case
+    widgets.text_input(
+      [],
+      widgets.InputState(value: "abc", cursor: 2, focused: True),
+    )
+  {
+    ui.Text(_, content) -> content |> should.equal("ab█c")
+    _ -> panic as "expected Text"
+  }
 }
 
 // ── Widget tests: SelectState ──
@@ -729,7 +775,10 @@ pub fn click_region_find_hit_test() {
 pub fn draw_plan_hline_creates_op_test() {
   let op =
     draw_plan.hline(
-      1, 2, 5, 0x2500,
+      1,
+      2,
+      5,
+      0x2500,
       draw_plan.Color(1.0, 1.0, 1.0, 1.0),
       draw_plan.Color(0.0, 0.0, 0.0, 0.0),
     )
@@ -742,7 +791,9 @@ pub fn draw_plan_hline_creates_op_test() {
 pub fn draw_plan_translate_test() {
   let plan = [
     draw_plan.text(
-      0, 0, "hi",
+      0,
+      0,
+      "hi",
       draw_plan.Color(1.0, 1.0, 1.0, 1.0),
       draw_plan.Color(0.0, 0.0, 0.0, 0.0),
       0,
